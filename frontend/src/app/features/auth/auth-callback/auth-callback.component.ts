@@ -1,6 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
-import { AuthService } from '../../../core/services/auth';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-auth-callback',
@@ -10,9 +9,7 @@ import { AuthService } from '../../../core/services/auth';
   styleUrl: './auth-callback.scss'
 })
 export class AuthCallbackComponent implements OnInit {
-  private route = inject(ActivatedRoute);
   private router = inject(Router);
-  private authService = inject(AuthService);
 
   ngOnInit() {
     // The backend set the HttpOnly cookies and redirected here.
