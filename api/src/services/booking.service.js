@@ -9,6 +9,7 @@ import logger from '../config/logger.js';
 import ApiError from '../utils/apiError.js';
 import { create as createNotification } from './notification.service.js';
 import { sendBookingConfirmation, sendBookingCancellation } from './email.service.js';
+import { createCalendarEventWithMeet } from './google.service.js';
 
 /**
  * Valid booking status transitions.
@@ -171,6 +172,36 @@ export async function create({ customerId, businessId, serviceId, staffId, date,
       },
     },
   });
+
+  // 4.5 Generate Google Meet link if applicable
+  let meetLink = null;
+  let googleEventId = null;
+
+  // Try to use assigned staff's Google account, fallback to business owner's Google account
+  let targetUser = booking.staff?.user;
+  if (!targetUser) {
+    const ownerMember = await prisma.businessMember.findFirst({
+      where: { businessId, role: 'OWNER' },
+      include: { user: true },
+    });
+    targetUser = ownerMember?.user;
+  }
+
+  if (targetUser?.googleAccessToken) {
+    const calendarData = await createCalendarEventWithMeet(targetUser, booking, service);
+    if (calendarData) {
+      meetLink = calendarData.meetLink;
+      googleEventId = calendarData.eventId;
+
+      // Update booking with meet details
+      await prisma.booking.update({
+        where: { id: booking.id },
+        data: { meetLink, googleEventId },
+      });
+      booking.meetLink = meetLink;
+      booking.googleEventId = googleEventId;
+    }
+  }
 
   // 5. Send confirmation notification (fire-and-forget)
   try {

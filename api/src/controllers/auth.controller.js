@@ -8,7 +8,22 @@ import * as authService from '../services/auth.service.js';
  */
 export const register = catchAsync(async (req, res) => {
   const result = await authService.register(req.body);
-  return created(res, { data: result });
+  
+  res.cookie('accessToken', result.accessToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: 15 * 60 * 1000 // 15 minutes
+  });
+
+  res.cookie('refreshToken', result.refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+  });
+
+  return created(res, { data: { user: result.user } });
 });
 
 /**
@@ -17,7 +32,22 @@ export const register = catchAsync(async (req, res) => {
  */
 export const login = catchAsync(async (req, res) => {
   const result = await authService.login(req.body);
-  return success(res, { data: result });
+  
+  res.cookie('accessToken', result.accessToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: 15 * 60 * 1000 // 15 minutes
+  });
+
+  res.cookie('refreshToken', result.refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+  });
+
+  return success(res, { data: { user: result.user } });
 });
 
 /**
@@ -25,8 +55,28 @@ export const login = catchAsync(async (req, res) => {
  * @route POST /api/v1/auth/refresh-token
  */
 export const refreshToken = catchAsync(async (req, res) => {
-  const result = await authService.refreshToken(req.body);
-  return success(res, { data: result });
+  const token = req.cookies.refreshToken || req.body.refreshToken;
+  if (!token) {
+    return res.status(401).json({ error: 'Refresh token missing' });
+  }
+
+  const result = await authService.refreshToken({ refreshToken: token });
+  
+  res.cookie('accessToken', result.accessToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: 15 * 60 * 1000 // 15 minutes
+  });
+
+  res.cookie('refreshToken', result.refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+  });
+
+  return success(res, { message: 'Tokens refreshed' });
 });
 
 /**
@@ -35,6 +85,8 @@ export const refreshToken = catchAsync(async (req, res) => {
  */
 export const logout = catchAsync(async (req, res) => {
   await authService.logout(req.user.id);
+  res.clearCookie('accessToken');
+  res.clearCookie('refreshToken');
   return noContent(res);
 });
 
@@ -55,3 +107,40 @@ export const resetPassword = catchAsync(async (req, res) => {
   await authService.resetPassword(req.params.token, req.body);
   return success(res, { message: 'Password reset successful' });
 });
+
+/**
+ * Handle Google OAuth callback and redirect to frontend with tokens.
+ * @route GET /api/v1/auth/google/callback
+ */
+export const googleCallback = catchAsync(async (req, res) => {
+  // req.user contains the googleData from passport
+  const result = await authService.googleLogin(req.user);
+  
+  res.cookie('accessToken', result.accessToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax', // Must be lax or none for OAuth redirect back
+    maxAge: 15 * 60 * 1000 // 15 minutes
+  });
+
+  res.cookie('refreshToken', result.refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+  });
+  
+  const frontendUrl = process.env.CORS_ORIGIN || 'http://localhost:4200';
+  const redirectUrl = new URL(`${frontendUrl}/dashboard`);
+  res.redirect(redirectUrl.toString());
+});
+
+/**
+ * Get current user profile.
+ * @route GET /api/v1/auth/me
+ */
+export const getMe = catchAsync(async (req, res) => {
+  // auth.middleware handles verification, so req.user is guaranteed to be valid
+  return success(res, { data: req.user });
+});
+

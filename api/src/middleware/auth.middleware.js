@@ -19,13 +19,12 @@ import ApiError from '../utils/apiError.js';
  */
 const authenticate = async (req, res, next) => {
   try {
-    const authHeader = req.headers.authorization;
-
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw ApiError.unauthorized('Authentication required');
+    // Support both cookie-based auth and Bearer token fallback for API clients
+    let token = req.cookies?.accessToken;
+    
+    if (!token && req.headers.authorization?.startsWith('Bearer ')) {
+      token = req.headers.authorization.split(' ')[1];
     }
-
-    const token = authHeader.split(' ')[1];
 
     if (!token) {
       throw ApiError.unauthorized('Authentication required');

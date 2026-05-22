@@ -30,6 +30,15 @@ const config = {
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 15 * 60 * 1000,
     max: parseInt(process.env.RATE_LIMIT_MAX, 10) || 100,
   },
+  google: {
+    clientId: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    callbackUrl: process.env.GOOGLE_CALLBACK_URL || 'http://localhost:3000/api/v1/auth/google/callback',
+  },
+  stripe: {
+    secretKey: process.env.STRIPE_SECRET_KEY || 'sk_test_dummy',
+    webhookSecret: process.env.STRIPE_WEBHOOK_SECRET || 'whsec_dummy',
+  }
 };
 
 export default Object.freeze(config);

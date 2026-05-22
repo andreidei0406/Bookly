@@ -1,6 +1,7 @@
 import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import pinoHttp from 'pino-http';
 import config from './config/index.js';
 import logger from './config/logger.js';
@@ -9,6 +10,7 @@ import errorHandler from './middleware/errorHandler.middleware.js';
 import routes from './routes/index.js';
 import prisma from './utils/prisma.js';
 import ApiError from './utils/apiError.js';
+import passport from './config/passport.js';
 
 const app = express();
 
@@ -27,8 +29,16 @@ app.use(
   })
 );
 
+/** Cookie parsing */
+app.use(cookieParser());
+
 /** Body parsing */
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ 
+  limit: '10mb',
+  verify: (req, res, buf) => {
+    req.rawBody = buf.toString();
+  }
+}));
 app.use(express.urlencoded({ extended: true }));
 
 /** HTTP request logging */
@@ -65,6 +75,7 @@ app.get('/health', async (_req, res, next) => {
 // API routes
 // ---------------------------------------------------------------------------
 
+app.use(passport.initialize());
 app.use('/api/v1', routes);
 
 // ---------------------------------------------------------------------------

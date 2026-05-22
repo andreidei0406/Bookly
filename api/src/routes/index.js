@@ -7,6 +7,7 @@ import staffRoutes from './staff.routes.js';
 import availabilityRoutes from './availability.routes.js';
 import bookingRoutes from './booking.routes.js';
 import notificationRoutes from './notification.routes.js';
+import stripeRoutes from './stripe.routes.js';
 
 const router = Router();
 
@@ -18,5 +19,6 @@ router.use('/businesses/:businessId/staff', staffRoutes);
 router.use('/businesses/:businessId/availability', availabilityRoutes);
 router.use('/bookings', bookingRoutes);
 router.use('/notifications', notificationRoutes);
+router.use('/stripe', stripeRoutes);
 
 export default router;

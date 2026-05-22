@@ -3,6 +3,7 @@ import * as authController from '../controllers/auth.controller.js';
 import validate from '../middleware/validate.middleware.js';
 import authenticate from '../middleware/auth.middleware.js';
 import { authLimiter } from '../middleware/rateLimiter.middleware.js';
+import passport from '../config/passport.js';
 import {
   registerSchema,
   loginSchema,
@@ -60,6 +61,17 @@ router.post(
 );
 
 /**
+ * @route GET /api/v1/auth/me
+ * @desc Get current user profile based on cookie
+ * @access Private
+ */
+router.get(
+  '/me',
+  authenticate,
+  authController.getMe
+);
+
+/**
  * @route POST /api/v1/auth/forgot-password
  * @desc Send password reset email
  * @access Public
@@ -80,6 +92,31 @@ router.post(
   '/reset-password/:token',
   validate(resetPasswordSchema),
   authController.resetPassword
+);
+
+/**
+ * @route GET /api/v1/auth/google
+ * @desc Initiate Google OAuth flow
+ * @access Public
+ */
+router.get(
+  '/google',
+  passport.authenticate('google', {
+    scope: ['profile', 'email', 'https://www.googleapis.com/auth/calendar.events'],
+    accessType: 'offline', // Request a refresh token
+    prompt: 'consent',     // Force consent screen to always get refresh token
+  })
+);
+
+/**
+ * @route GET /api/v1/auth/google/callback
+ * @desc Google OAuth callback
+ * @access Public
+ */
+router.get(
+  '/google/callback',
+  passport.authenticate('google', { session: false, failureRedirect: '/login' }),
+  authController.googleCallback
 );
 
 export default router;

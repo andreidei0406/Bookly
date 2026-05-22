@@ -19,7 +19,7 @@ WORKDIR /app
 RUN addgroup -g 1001 -S appgroup && adduser -S appuser -u 1001 -G appgroup
 
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=build /app/src/prisma/client ./src/prisma/client
+COPY --from=build /app/node_modules/.prisma ./node_modules/.prisma
 COPY . .
 
 USER appuser

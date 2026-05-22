@@ -304,3 +304,84 @@ export async function resetPassword({ token, password }) {
 
   logger.info(`Password reset completed for user: ${user.email}`);
 }
+
+/**
+ * Handle Google OAuth login or registration.
+ * @param {object} googleData - Data from passport Google strategy
+ * @returns {Promise<{user: object, accessToken: string, refreshToken: string}>}
+ */
+export async function googleLogin(googleData) {
+  const { googleId, email, firstName, lastName, avatar, accessToken, refreshToken, expiryDate } = googleData;
+
+  let user = await prisma.user.findUnique({
+    where: { googleId },
+  });
+
+  if (!user) {
+    // Check if user exists by email (link accounts)
+    user = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (user) {
+      // Link Google to existing account
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          googleId,
+          googleAccessToken: accessToken,
+          googleRefreshToken: refreshToken || user.googleRefreshToken, // keep old if new is missing
+          googleTokenExpiry: expiryDate,
+          emailVerified: true,
+        },
+      });
+    } else {
+      // Create new user via Google
+      user = await prisma.user.create({
+        data: {
+          email,
+          firstName,
+          lastName,
+          avatar,
+          googleId,
+          googleAccessToken: accessToken,
+          googleRefreshToken: refreshToken,
+          googleTokenExpiry: expiryDate,
+          emailVerified: true,
+        },
+      });
+      // Fire-and-forget welcome email
+      sendWelcomeEmail(user);
+    }
+  } else {
+    // Update existing Google user tokens
+    user = await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        googleAccessToken: accessToken,
+        googleRefreshToken: refreshToken || user.googleRefreshToken,
+        googleTokenExpiry: expiryDate,
+      },
+    });
+  }
+
+  const appAccessToken = generateAccessToken(user);
+  const appRefreshToken = generateRefreshToken(user);
+
+  // Store hashed refresh token for the Bookly API
+  await prisma.refreshToken.create({
+    data: {
+      tokenHash: hashToken(appRefreshToken),
+      userId: user.id,
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    },
+  });
+
+  logger.info(`User logged in via Google: ${user.email}`);
+
+  return {
+    user: excludePassword(user),
+    accessToken: appAccessToken,
+    refreshToken: appRefreshToken,
+  };
+}

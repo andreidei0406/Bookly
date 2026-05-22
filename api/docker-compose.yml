@@ -31,7 +31,7 @@ services:
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
     command: >
-      sh -c 'npx prisma migrate deploy --schema=src/prisma/schema.prisma && node src/server.js'
+      sh -c 'npx prisma db push --schema=src/prisma/schema.prisma --accept-data-loss && node src/prisma/seed.js && node --experimental-strip-types src/server.js'
 
 volumes:
   pgdata:

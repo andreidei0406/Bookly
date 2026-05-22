@@ -11,6 +11,25 @@ enum PlatformRole {
   SUPER_ADMIN
 }
 
+enum SubscriptionTier {
+  FREE
+  PRO
+  ULTRA
+}
+
+enum PaymentType {
+  FREE
+  OPTIONAL
+  REQUIRED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
 enum BusinessRole {
   OWNER
   ADMIN
@@ -42,19 +61,23 @@ enum NotificationType {
 }
 
 model User {
-  id            String          @id @default(cuid())
-  email         String          @unique
-  password      String
-  firstName     String
-  lastName      String
-  phone         String?
-  avatar        String?
-  platformRole  PlatformRole    @default(USER)
-  isActive      Boolean         @default(true)
-  emailVerified Boolean         @default(false)
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-  deletedAt     DateTime?
+  id                 String          @id @default(cuid())
+  email              String          @unique
+  password           String?
+  firstName          String
+  lastName           String
+  phone              String?
+  avatar             String?
+  platformRole       PlatformRole    @default(USER)
+  isActive           Boolean         @default(true)
+  emailVerified      Boolean         @default(false)
+  googleId           String?         @unique
+  googleAccessToken  String?
+  googleRefreshToken String?
+  googleTokenExpiry  DateTime?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  deletedAt          DateTime?
 
   memberships   BusinessMember[]
   bookings      Booking[]       @relation("CustomerBookings")
@@ -65,24 +88,28 @@ model User {
 }
 
 model Business {
-  id          String   @id @default(cuid())
-  name        String
-  slug        String   @unique
-  description String?
-  email       String?
-  phone       String?
-  address     String?
-  city        String?
-  state       String?
-  country     String?
-  zipCode     String?
-  timezone    String   @default("UTC")
-  logo        String?
-  website     String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  deletedAt   DateTime?
+  id                       String           @id @default(cuid())
+  name                     String
+  slug                     String           @unique
+  description              String?
+  email                    String?
+  phone                    String?
+  address                  String?
+  city                     String?
+  state                    String?
+  country                  String?
+  zipCode                  String?
+  timezone                 String           @default("UTC")
+  logo                     String?
+  website                  String?
+  isActive                 Boolean          @default(true)
+  subscriptionTier         SubscriptionTier @default(FREE)
+  stripeCustomerId         String?          @unique
+  stripeSubscriptionId     String?          @unique
+  stripeSubscriptionStatus String?
+  createdAt                DateTime         @default(now())
+  updatedAt                DateTime         @updatedAt
+  deletedAt                DateTime?
 
   members     BusinessMember[]
   services    Service[]
@@ -111,17 +138,18 @@ model BusinessMember {
 }
 
 model Service {
-  id          String   @id @default(cuid())
+  id          String      @id @default(cuid())
   businessId  String
   name        String
   description String?
-  duration    Int      // Duration in minutes
-  price       Decimal  @default(0) @db.Decimal(10, 2)
-  currency    String   @default("USD")
-  color       String?  // For calendar UI
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  duration    Int         // Duration in minutes
+  price       Decimal     @default(0) @db.Decimal(10, 2)
+  currency    String      @default("USD")
+  paymentType PaymentType @default(FREE)
+  color       String?     // For calendar UI
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
   deletedAt   DateTime?
 
   business    Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
@@ -164,21 +192,25 @@ model StaffSchedule {
 }
 
 model Booking {
-  id            String        @id @default(cuid())
-  businessId    String
-  customerId    String
-  serviceId     String
-  staffId       String?       // Optional: assigned staff member
-  date          DateTime      @db.Date
-  startTime     String        // HH:mm format
-  endTime       String        // HH:mm format
-  status        BookingStatus @default(PENDING)
-  notes         String?
-  cancelReason  String?
-  cancelledAt   DateTime?
-  completedAt   DateTime?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id                    String        @id @default(cuid())
+  businessId            String
+  customerId            String
+  serviceId             String
+  staffId               String?       // Optional: assigned staff member
+  date                  DateTime      @db.Date
+  startTime             String        // HH:mm format
+  endTime               String        // HH:mm format
+  status                BookingStatus @default(PENDING)
+  paymentStatus         PaymentStatus @default(PENDING)
+  stripePaymentIntentId String?       @unique
+  meetLink              String?
+  googleEventId         String?
+  notes                 String?
+  cancelReason          String?
+  cancelledAt           DateTime?
+  completedAt           DateTime?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
 
   business      Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
   customer      User           @relation("CustomerBookings", fields: [customerId], references: [id], onDelete: Cascade)

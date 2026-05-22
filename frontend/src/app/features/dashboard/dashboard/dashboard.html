@@ -1,0 +1,245 @@
+<div class="h-screen flex overflow-hidden bg-gray-50">
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- LEFT SIDEBAR — slim icon-only rail              -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <aside class="w-16 bg-surface-dark flex flex-col items-center py-4 gap-2 shrink-0">
+    <!-- Logo -->
+    <div class="w-10 h-10 bg-brand-600 rounded-xl flex items-center justify-center mb-6 shadow-lg">
+      <span class="text-white font-bold text-lg leading-none">B</span>
+    </div>
+
+    <!-- Calendar Button -->
+    <button
+      (click)="setView('calendar')"
+      [class.bg-white\/15]="activeView() === 'calendar'"
+      [class.text-white]="activeView() === 'calendar'"
+      [class.text-gray-400]="activeView() !== 'calendar'"
+      class="w-10 h-10 rounded-xl flex items-center justify-center hover:bg-white/10 hover:text-white transition-all group relative"
+      title="Calendar">
+      <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+      </svg>
+      <!-- Tooltip -->
+      <span class="absolute left-14 bg-gray-900 text-white text-xs px-2 py-1 rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">Calendar</span>
+    </button>
+
+    <!-- Profile Button -->
+    <button
+      (click)="setView('profile')"
+      [class.bg-white\/15]="activeView() === 'profile'"
+      [class.text-white]="activeView() === 'profile'"
+      [class.text-gray-400]="activeView() !== 'profile'"
+      class="w-10 h-10 rounded-xl flex items-center justify-center hover:bg-white/10 hover:text-white transition-all group relative"
+      title="Profile">
+      <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+      </svg>
+      <span class="absolute left-14 bg-gray-900 text-white text-xs px-2 py-1 rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">Profile</span>
+    </button>
+
+    <!-- Spacer -->
+    <div class="flex-grow"></div>
+
+    <!-- Logout Button -->
+    <button
+      (click)="logout()"
+      class="w-10 h-10 rounded-xl flex items-center justify-center text-gray-400 hover:bg-red-500/20 hover:text-red-400 transition-all group relative"
+      title="Logout">
+      <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+      </svg>
+      <span class="absolute left-14 bg-gray-900 text-white text-xs px-2 py-1 rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">Logout</span>
+    </button>
+  </aside>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- MAIN CONTENT AREA                               -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <div class="flex-grow flex flex-col overflow-hidden">
+
+    <!-- ── Calendar View ──────────────────────────── -->
+    <div *ngIf="activeView() === 'calendar'" class="flex-grow flex flex-col overflow-hidden">
+
+      <!-- Header bar -->
+      <header class="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-4">
+          <h1 class="text-xl font-bold text-gray-900">{{ monthYearLabel() }}</h1>
+          <div class="flex items-center gap-1">
+            <button (click)="prevMonth()" class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors">
+              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+            </button>
+            <button (click)="nextMonth()" class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors">
+              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+            </button>
+            <button (click)="goToToday()" class="ml-2 text-sm font-medium text-brand-600 hover:text-brand-700 px-3 py-1.5 rounded-lg hover:bg-brand-50 transition-colors">Today</button>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <!-- User avatar -->
+          <div class="relative">
+            <button (click)="toggleProfileDropdown()" class="w-9 h-9 rounded-full bg-gradient-to-tr from-brand-500 to-purple-500 flex items-center justify-center text-white text-sm font-bold shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+              {{ getUserInitials() }}
+            </button>
+            <!-- Mini dropdown -->
+            <div *ngIf="showProfileDropdown()" class="absolute right-0 top-12 bg-white rounded-xl shadow-lg border border-gray-200 py-2 w-48 z-50">
+              <div class="px-4 py-2 border-b border-gray-100">
+                <p class="text-sm font-medium text-gray-900">{{ currentUser()?.firstName }} {{ currentUser()?.lastName }}</p>
+                <p class="text-xs text-gray-500">{{ currentUser()?.email }}</p>
+              </div>
+              <button (click)="setView('profile')" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                My Profile
+              </button>
+              <button (click)="logout()" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                Log out
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Calendar + Side panel -->
+      <div class="flex-grow flex overflow-hidden">
+
+        <!-- Calendar Grid -->
+        <div class="flex-grow flex flex-col overflow-auto p-6">
+          <!-- Week day headers -->
+          <div class="grid grid-cols-7 mb-2">
+            <div *ngFor="let day of weekDays" class="text-center text-xs font-semibold text-gray-400 uppercase tracking-wider py-2">
+              {{ day }}
+            </div>
+          </div>
+
+          <!-- Day cells -->
+          <div class="grid grid-cols-7 flex-grow gap-px bg-gray-200 rounded-2xl overflow-hidden border border-gray-200">
+            <button
+              *ngFor="let day of calendarDays()"
+              (click)="selectDay(day)"
+              [class.bg-white]="day.isCurrentMonth"
+              [class.bg-gray-50]="!day.isCurrentMonth"
+              [class.ring-2]="isSelected(day)"
+              [class.ring-brand-500]="isSelected(day)"
+              [class.ring-inset]="isSelected(day)"
+              class="min-h-[90px] p-2 text-left transition-all hover:bg-brand-50/50 flex flex-col group relative">
+
+              <!-- Day number -->
+              <span
+                [class.text-gray-900]="day.isCurrentMonth && !day.isToday"
+                [class.text-gray-400]="!day.isCurrentMonth"
+                [class.bg-brand-600]="day.isToday"
+                [class.text-white]="day.isToday"
+                [class.rounded-full]="day.isToday"
+                [class.w-7]="day.isToday"
+                [class.h-7]="day.isToday"
+                [class.flex]="day.isToday"
+                [class.items-center]="day.isToday"
+                [class.justify-center]="day.isToday"
+                class="text-sm font-medium inline-block mb-1">
+                {{ day.dayNumber }}
+              </span>
+
+              <!-- Event dots -->
+              <div class="space-y-0.5 overflow-hidden flex-grow">
+                <div *ngFor="let event of day.events.slice(0, 2)"
+                  class="text-[10px] font-medium truncate px-1.5 py-0.5 rounded"
+                  [style.background-color]="event.color + '20'"
+                  [style.color]="event.color">
+                  {{ event.time }} {{ event.title }}
+                </div>
+                <div *ngIf="day.events.length > 2" class="text-[10px] text-gray-400 px-1.5">
+                  +{{ day.events.length - 2 }} more
+                </div>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Right side panel: selected day detail -->
+        <aside class="w-80 bg-white border-l border-gray-200 flex flex-col shrink-0 overflow-hidden">
+          <div class="p-5 border-b border-gray-100">
+            <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider">Schedule</h2>
+            <p class="text-lg font-bold text-gray-900 mt-1">{{ selectedDateLabel() }}</p>
+          </div>
+
+          <div class="flex-grow overflow-auto p-5">
+            <!-- Events list -->
+            <div *ngIf="selectedDayEvents().length > 0" class="space-y-3">
+              <div *ngFor="let event of selectedDayEvents()"
+                class="p-3 rounded-xl border border-gray-100 hover:shadow-md transition-shadow cursor-pointer group">
+                <div class="flex items-start gap-3">
+                  <div class="w-1 h-full min-h-[40px] rounded-full shrink-0" [style.background-color]="event.color"></div>
+                  <div class="flex-grow min-w-0">
+                    <p class="font-semibold text-gray-900 text-sm">{{ event.title }}</p>
+                    <p class="text-xs text-gray-500 mt-0.5">{{ event.time }} · {{ event.duration }} min</p>
+                    <p class="text-xs text-gray-400 mt-1 flex items-center gap-1">
+                      <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                      {{ event.customerName }}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Empty state -->
+            <div *ngIf="selectedDayEvents().length === 0" class="flex flex-col items-center justify-center h-full text-center">
+              <div class="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mb-4">
+                <svg class="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <p class="text-sm font-medium text-gray-500">No bookings</p>
+              <p class="text-xs text-gray-400 mt-1">This day looks free</p>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+
+    <!-- ── Profile View ───────────────────────────── -->
+    <div *ngIf="activeView() === 'profile'" class="flex-grow overflow-auto">
+      <div class="max-w-2xl mx-auto py-10 px-6">
+        <h1 class="text-2xl font-bold text-gray-900 mb-8">My Profile</h1>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+          <!-- Profile header -->
+          <div class="bg-gradient-to-r from-brand-600 to-purple-600 px-6 py-8 flex items-center gap-5">
+            <div class="w-20 h-20 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center text-white text-2xl font-bold border-2 border-white/30">
+              {{ getUserInitials() }}
+            </div>
+            <div>
+              <h2 class="text-xl font-bold text-white">{{ currentUser()?.firstName }} {{ currentUser()?.lastName }}</h2>
+              <p class="text-white/70 text-sm">{{ currentUser()?.email }}</p>
+              <span class="mt-2 inline-block text-xs font-medium bg-white/20 text-white px-2.5 py-0.5 rounded-full">{{ currentUser()?.platformRole }}</span>
+            </div>
+          </div>
+
+          <!-- Profile fields -->
+          <div class="p-6 space-y-5">
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-500 mb-1">First Name</label>
+                <p class="text-gray-900 font-medium">{{ currentUser()?.firstName || '—' }}</p>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-500 mb-1">Last Name</label>
+                <p class="text-gray-900 font-medium">{{ currentUser()?.lastName || '—' }}</p>
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-500 mb-1">Email</label>
+              <p class="text-gray-900 font-medium">{{ currentUser()?.email || '—' }}</p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-500 mb-1">Role</label>
+              <p class="text-gray-900 font-medium">{{ currentUser()?.platformRole || '—' }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
