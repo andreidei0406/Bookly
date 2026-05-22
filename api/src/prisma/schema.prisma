@@ -1,0 +1,227 @@
+generator client {
+  provider = "prisma-client"
+  output   = "./client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum PlatformRole {
+  USER
+  SUPER_ADMIN
+}
+
+enum BusinessRole {
+  OWNER
+  ADMIN
+  STAFF
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+}
+
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+enum NotificationType {
+  EMAIL
+  SMS
+  PUSH
+}
+
+model User {
+  id            String          @id @default(cuid())
+  email         String          @unique
+  password      String
+  firstName     String
+  lastName      String
+  phone         String?
+  avatar        String?
+  platformRole  PlatformRole    @default(USER)
+  isActive      Boolean         @default(true)
+  emailVerified Boolean         @default(false)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  deletedAt     DateTime?
+
+  memberships   BusinessMember[]
+  bookings      Booking[]       @relation("CustomerBookings")
+  refreshTokens RefreshToken[]
+  notifications Notification[]
+
+  @@map("users")
+}
+
+model Business {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  email       String?
+  phone       String?
+  address     String?
+  city        String?
+  state       String?
+  country     String?
+  zipCode     String?
+  timezone    String   @default("UTC")
+  logo        String?
+  website     String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  members     BusinessMember[]
+  services    Service[]
+  bookings    Booking[]
+  workingHours WorkingHours[]
+
+  @@map("businesses")
+}
+
+model BusinessMember {
+  id         String       @id @default(cuid())
+  userId     String
+  businessId String
+  role       BusinessRole @default(STAFF)
+  isActive   Boolean      @default(true)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  business   Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  bookings   Booking[]    @relation("StaffBookings")
+  schedules  StaffSchedule[]
+
+  @@unique([userId, businessId])
+  @@map("business_members")
+}
+
+model Service {
+  id          String   @id @default(cuid())
+  businessId  String
+  name        String
+  description String?
+  duration    Int      // Duration in minutes
+  price       Decimal  @default(0) @db.Decimal(10, 2)
+  currency    String   @default("USD")
+  color       String?  // For calendar UI
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  business    Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  bookings    Booking[]
+
+  @@map("services")
+}
+
+model WorkingHours {
+  id         String    @id @default(cuid())
+  businessId String
+  dayOfWeek  DayOfWeek
+  openTime   String    // HH:mm format (e.g., "09:00")
+  closeTime  String    // HH:mm format (e.g., "17:00")
+  isClosed   Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  business   Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, dayOfWeek])
+  @@map("working_hours")
+}
+
+model StaffSchedule {
+  id              String         @id @default(cuid())
+  memberId        String
+  date            DateTime       @db.Date   // Specific date override
+  startTime       String?        // HH:mm format, null = day off
+  endTime         String?        // HH:mm format
+  isAvailable     Boolean        @default(true)
+  note            String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  member          BusinessMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([memberId, date])
+  @@map("staff_schedules")
+}
+
+model Booking {
+  id            String        @id @default(cuid())
+  businessId    String
+  customerId    String
+  serviceId     String
+  staffId       String?       // Optional: assigned staff member
+  date          DateTime      @db.Date
+  startTime     String        // HH:mm format
+  endTime       String        // HH:mm format
+  status        BookingStatus @default(PENDING)
+  notes         String?
+  cancelReason  String?
+  cancelledAt   DateTime?
+  completedAt   DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  business      Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  customer      User           @relation("CustomerBookings", fields: [customerId], references: [id], onDelete: Cascade)
+  service       Service        @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  staff         BusinessMember? @relation("StaffBookings", fields: [staffId], references: [id], onDelete: SetNull)
+  notifications Notification[]
+
+  @@index([businessId, date])
+  @@index([customerId])
+  @@index([staffId])
+  @@map("bookings")
+}
+
+model RefreshToken {
+  id          String   @id @default(cuid())
+  userId      String
+  tokenHash   String   @unique
+  expiresAt   DateTime
+  isRevoked   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  revokedAt   DateTime?
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model Notification {
+  id         String           @id @default(cuid())
+  userId     String
+  bookingId  String?
+  type       NotificationType @default(EMAIL)
+  subject    String
+  body       String
+  isRead     Boolean          @default(false)
+  sentAt     DateTime         @default(now())
+  readAt     DateTime?
+
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  booking    Booking?         @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}

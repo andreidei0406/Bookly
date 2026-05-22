@@ -8,13 +8,13 @@
 .angular/
 
 # Node modules and dependency files
-/node_modules/
-/package-lock.json
-/yarn.lock
+node_modules/
+# Do not ignore package-lock.json or yarn.lock to ensure reproducible builds
 
 # Environment files
 /.env
-
+.env
+.agents
 # Angular CLI and build artefacts
 /.angular-cli.json
 /.ng/
@@ -26,3 +26,17 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pino-*.log
+*.log
+
+# macOS
+.DS_Store
+
+# Backend / API specific
+api/node_modules/
+api/src/prisma/client/
+api/coverage/
+
+# IDEs and Editors
+.vscode/
+.idea/

@@ -1,0 +1,35 @@
+node_modules
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+
+# Markdown files except README
+*.md
+!README.md
+
+# Docker
+docker-compose.yml
+docker-compose.*.yml
+
+# Linting & testing
+.eslintrc.json
+eslint.config.js
+coverage
+
+# Frontend build artifacts
+.angular
+dist
+
+# IDE
+.vscode
+.idea
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs
