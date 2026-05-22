@@ -31,6 +31,8 @@ jobs:
 
     - name: Generate Prisma Client
       run: npm run db:generate
+      env:
+        DATABASE_URL: "postgresql://dummy:dummy@localhost:5432/dummy"
 
     - name: Run Linter
       run: npm run lint
