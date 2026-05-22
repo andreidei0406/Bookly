@@ -1,87 +1,198 @@
-# Bookly - Appointment Booking SaaS
+# Bookly — Appointment Booking SaaS
 
-Welcome to the Bookly project! This repository contains the complete stack for a production-ready Appointment Booking Software-as-a-Service (SaaS). 
+A full-stack, production-ready **Calendly-style** appointment booking platform built as a monorepo.
 
-Currently, this repository houses the **Backend API**.
+| Layer | Tech |
+|-------|------|
+| **Frontend** | Angular 21 · TailwindCSS · Signals |
+| **Backend API** | Node.js 24 · Express 5 · Prisma ORM |
+| **Database** | PostgreSQL 16 (Docker) |
+| **Auth** | HttpOnly cookie JWTs + Google OAuth 2.0 |
+| **Payments** | Stripe Checkout (optional per-service) |
+| **CI** | GitHub Actions |
+
+---
+
+## 📁 Monorepo Structure
+
+```
+Bookly/
+├── api/                 # Express REST API
+│   ├── src/
+│   │   ├── config/      # Centralised env config & logger
+│   │   ├── controllers/ # Thin HTTP handlers
+│   │   ├── middleware/   # Auth, RBAC, validation, error handling
+│   │   ├── prisma/      # Schema, migrations, seed
+│   │   ├── routes/      # Express route definitions
+│   │   ├── services/    # Business logic layer
+│   │   ├── utils/       # Helpers (Prisma singleton, ApiError, etc.)
+│   │   └── validators/  # Zod schemas
+│   ├── Dockerfile
+│   ├── docker-compose.yml
+│   └── package.json
+│
+├── frontend/            # Angular 21 SPA
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── core/          # Guards, interceptors, services
+│   │   │   └── features/      # Auth, Dashboard, Booking pages
+│   │   ├── styles.css         # Tailwind + design tokens
+│   │   └── index.html
+│   └── package.json
+│
+└── .github/workflows/ci.yml   # CI pipeline
+```
 
 ---
 
 ## 🏗️ Backend Architecture
 
-The API is built using **Node.js, Express, Prisma ORM, and PostgreSQL**. It follows a highly scalable, industry-standard **3-Tier Architecture** (also known as the Controller-Service pattern). 
-
-If you want to understand how the code flows, here is the exact path a request takes when a user hits an endpoint:
+The API follows an industry-standard **Controller → Service → ORM** pattern.
+Here is the exact path a request takes:
 
 ### 1. Routes (`src/routes/`)
-This is the entry point. A route file (like `business.routes.js`) simply maps an HTTP method and a URL (like `GET /api/v1/businesses`) to a specific Controller function. It also attaches any necessary **Middleware** (like checking if the user is logged in).
+Maps HTTP methods and URLs (e.g. `GET /api/v1/businesses`) to Controller functions.
+Attaches middleware (auth, validation, RBAC) along the way.
 
 ### 2. Middleware (`src/middleware/`)
-Before the request reaches the controller, it passes through security checkpoints:
-* **`validate.middleware.js`**: Uses `zod` to ensure the incoming JSON body is perfectly formatted. If a user forgets to send an email, it rejects the request instantly.
-* **`auth.middleware.js`**: Checks for a valid JWT Access Token in the `Authorization` header. If valid, it attaches the user data to `req.user`.
-* **`rbac.middleware.js`**: (Role-Based Access Control) Checks if the user has permission to do the action (e.g., verifying if the user is the `OWNER` of a business before letting them delete it).
+Security checkpoints that run *before* the controller:
+- **`validate.middleware.js`** — Uses Zod to reject malformed bodies instantly.
+- **`auth.middleware.js`** — Reads the `accessToken` from the HttpOnly cookie and attaches `req.user`.
+- **`rbac.middleware.js`** — Verifies the user has the correct role (OWNER, ADMIN, STAFF).
 
 ### 3. Controllers (`src/controllers/`)
-The traffic cop. Controllers (like `business.controller.js`) are deliberately kept very thin. Their only job is to:
-1. Grab data from the request (`req.body`, `req.params`).
-2. Pass that data to a **Service**.
-3. Take the result from the Service and send it back to the user using standard response formatters (`created()`, `success()`).
+Deliberately thin. They extract data from the request, call a Service, and send the response.
 
 ### 4. Services (`src/services/`)
-**This is where the magic happens.** All your heavy business logic lives here (like `business.service.js`). 
-* Need to hash a password? Do it in a service. 
-* Need to check if an email already exists? Do it in a service. 
-* Need to fetch something from the database? The service asks Prisma to do it.
-* By keeping logic here, it makes your code incredibly easy to test (which is why our tests run in 5 milliseconds!).
+All business logic lives here: password hashing, availability checks, Stripe checkout sessions, Google Calendar integration, etc.
 
 ### 5. Prisma ORM (`src/prisma/`)
-The database layer. Instead of writing raw SQL strings, we use Prisma.
-* **`schema.prisma`**: The source of truth. Defines all your tables (Users, Businesses, Bookings) and how they relate to each other.
-* Prisma automatically generates a strictly-typed JavaScript client that the Services use to interact with PostgreSQL securely (preventing SQL injection automatically).
+- **`schema.prisma`** — The source of truth for all tables (Users, Businesses, Services, Bookings, etc.).
+- Prisma generates a type-safe client that prevents SQL injection automatically.
 
 ---
 
-## 🔒 Security & Authentication Flow
+## 🖥️ Frontend Architecture
 
-The API uses a dual-token JWT architecture:
-1. **Access Token**: Short-lived (expires in 15 minutes). Sent with every single request.
-2. **Refresh Token**: Long-lived (expires in 7 days). Stored securely in the database and sent as a secure, HTTP-only cookie to the browser. When the Access Token expires, the frontend secretly uses the Refresh Token to get a new one without forcing the user to log in again.
+The Angular 21 SPA is built with modern best practices:
+
+- **Standalone components** — No NgModules.
+- **Signals** — Reactive state management using Angular's native `signal()` API.
+- **Functional interceptors & guards** — `authInterceptor` adds `withCredentials: true` to every request; `authGuard` / `noAuthGuard` protect routes.
+- **HttpOnly cookie auth** — Tokens are never visible to JavaScript. The `AuthService` hydrates the session via `GET /api/v1/auth/me` on startup.
+
+### Key Views
+
+| View | Description |
+|------|-------------|
+| **Login / Register** | Glassmorphism UI with email/password + Google OAuth |
+| **Dashboard** | Calendar-first layout with a slim icon sidebar (Calendar, Profile, Logout) |
+| **Public Booking** | `/booking/:businessSlug` — Public page for customers to book services |
 
 ---
 
-## 🚀 Running the API Locally
+## 🔒 Security & Authentication
 
-### 1. Start the Database
-We use Docker to run the PostgreSQL database so you don't have to install it locally.
+The API uses a **dual-token JWT** architecture stored as **HttpOnly cookies**:
+
+1. **Access Token** — Short-lived (15 min). Sent automatically by the browser with every request.
+2. **Refresh Token** — Long-lived (7 days). Stored in the database; used to silently rotate the access token.
+
+Both tokens are set with `HttpOnly`, `Secure` (in production), and `SameSite=Lax` flags, making them immune to XSS token theft.
+
+### Google OAuth 2.0
+Users can log in with their Google account. The backend handles the full OAuth handshake via Passport.js and sets the same HttpOnly cookies on the redirect.
+
+---
+
+## 💳 Stripe Integration
+
+Each Service can be configured with a `paymentType`:
+- **FREE** — No payment required.
+- **OPTIONAL** — Customer *may* pay by card or in person.
+- **REQUIRED** — Card payment via Stripe Checkout is mandatory before the booking is confirmed.
+
+---
+
+## 🚀 Running Locally
+
+### Prerequisites
+- **Node.js ≥ 24** and **npm**
+- **Docker** (for PostgreSQL)
+
+### 1. Start the Backend (API + Database)
+
 ```bash
 cd api
-docker-compose up -d
+cp .env.example .env          # edit with your secrets
+docker compose up --build -d  # starts Postgres + API
 ```
 
-### 2. Install & Generate
-Install Node packages and generate the Prisma client:
+The Docker startup command automatically:
+1. Pushes the Prisma schema to the database (`prisma db push`)
+2. Seeds demo data (Admin user, Demo Salon, services, working hours)
+3. Starts the Node.js server on **port 3000**
+
+Verify: `curl http://localhost:3000/health`
+
+### 2. Start the Frontend
+
 ```bash
+cd frontend
 npm install
-npm run db:generate
+npm start              # Angular dev server on port 4200
 ```
 
-### 3. Seed the Database
-Push the schema to the database and insert the default demo data (Admin user, Demo Salon, etc.):
-```bash
-npm run db:migrate:deploy
-npm run db:seed
-```
+Open **http://localhost:4200** in your browser.
 
-### 4. Start the Server
-Start the development server with hot-reloading:
-```bash
-npm run dev
-```
+### 3. Demo Accounts
 
-You can now hit `http://localhost:3000/health` to verify the server is running!
+| Account | Email | Password |
+|---------|-------|----------|
+| **Admin** (Business Owner) | `admin@bookly.com` | `Admin1234!` |
+| **Customer** | `customer@example.com` | `Customer1234!` |
 
-### 5. Running Tests
-The API is fully tested using **Vitest**. To run the tests in watch mode:
+---
+
+## 🧪 Running Tests
+
+### Backend (Vitest)
 ```bash
+cd api
 npm test
 ```
+
+### Frontend (Angular CLI)
+```bash
+cd frontend
+npm run build    # production build check
+```
+
+---
+
+## 🔄 CI Pipeline
+
+The GitHub Actions pipeline (`.github/workflows/ci.yml`) runs on every push and PR to `main`:
+
+| Job | Steps |
+|-----|-------|
+| **API** | Install → Generate Prisma → Lint → Test |
+| **Frontend** | Install → Build (type-check + bundle) |
+
+Both jobs run in parallel for fast feedback.
+
+---
+
+## 📝 Environment Variables
+
+Copy `api/.env.example` to `api/.env` and configure:
+
+| Variable | Description |
+|----------|-------------|
+| `DATABASE_URL` | PostgreSQL connection string |
+| `JWT_ACCESS_SECRET` | Secret for signing access tokens |
+| `JWT_REFRESH_SECRET` | Secret for signing refresh tokens |
+| `GOOGLE_CLIENT_ID` | Google OAuth client ID |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret |
+| `STRIPE_SECRET_KEY` | Stripe secret key (optional for dev) |
+| `CORS_ORIGIN` | Frontend URL (default: `http://localhost:4200`) |
