@@ -5,7 +5,7 @@
  * into a consistent JSON response format.
  */
 
-import { Prisma } from '../prisma/client/client.ts';
+import { Prisma } from '@prisma/client';
 import { ZodError } from 'zod';
 import ApiError from '../utils/apiError.js';
 import config from '../config/index.js';
