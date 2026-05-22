@@ -9,12 +9,12 @@ export const routes: Routes = [
   },
   {
     path: 'login',
-    loadComponent: () => import('./features/auth/login/login').then(m => m.LoginComponent),
+    loadComponent: () => import('./features/auth/login/login.component').then(m => m.LoginComponent),
     canActivate: [noAuthGuard]
   },
   {
     path: 'register',
-    loadComponent: () => import('./features/auth/register/register').then(m => m.RegisterComponent),
+    loadComponent: () => import('./features/auth/register/register.component').then(m => m.RegisterComponent),
     canActivate: [noAuthGuard]
   },
   {
@@ -24,10 +24,10 @@ export const routes: Routes = [
   },
   {
     path: 'booking/:businessSlug',
-    loadComponent: () => import('./features/booking/booking-page/booking-page').then(m => m.BookingPageComponent)
+    loadComponent: () => import('./features/booking/booking-page/booking-page.component').then(m => m.BookingPageComponent)
   },
   {
     path: 'auth/callback',
-    loadComponent: () => import('./features/auth/auth-callback/auth-callback').then(m => m.AuthCallbackComponent)
+    loadComponent: () => import('./features/auth/auth-callback/auth-callback.component').then(m => m.AuthCallbackComponent)
   }
 ];

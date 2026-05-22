@@ -1,17 +1,22 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-
-import { AuthCallback } from './auth-callback';
+import { provideRouter } from '@angular/router';
+import { provideHttpClient } from '@angular/common/http';
+import { AuthCallbackComponent } from './auth-callback.component';
 
 describe('AuthCallback', () => {
-  let component: AuthCallback;
-  let fixture: ComponentFixture<AuthCallback>;
+  let component: AuthCallbackComponent;
+  let fixture: ComponentFixture<AuthCallbackComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [AuthCallback],
+      imports: [AuthCallbackComponent],
+      providers: [
+        provideRouter([{ path: 'dashboard', component: AuthCallbackComponent }]),
+        provideHttpClient(),
+      ],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(AuthCallback);
+    fixture = TestBed.createComponent(AuthCallbackComponent);
     component = fixture.componentInstance;
     await fixture.whenStable();
   });
