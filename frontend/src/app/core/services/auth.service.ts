@@ -10,6 +10,8 @@ export interface User {
   firstName: string;
   lastName: string;
   platformRole: string;
+  googleId?: string;
+  memberships?: any[];
 }
 
 @Injectable({
@@ -23,22 +25,26 @@ export class AuthService {
   readonly isAuthenticated = signal<boolean>(false);
 
   constructor(private http: HttpClient, private router: Router) {
-    this.checkSession();
   }
 
   /**
-   * Called on startup to see if the HttpOnly cookie is still valid
+   * Called on startup via APP_INITIALIZER to see if the HttpOnly cookie is still valid
+   * Resolves when the session check is complete to block app bootstrap.
    */
-  checkSession() {
-    this.http.get<{data: User}>(`${this.API_URL}/me`, { withCredentials: true }).subscribe({
-      next: (res) => {
-        this.currentUser.set(res.data);
-        this.isAuthenticated.set(true);
-      },
-      error: () => {
-        this.currentUser.set(null);
-        this.isAuthenticated.set(false);
-      }
+  checkSessionPromise(): Promise<void> {
+    return new Promise((resolve) => {
+      this.http.get<{data: User}>(`${this.API_URL}/me`, { withCredentials: true }).subscribe({
+        next: (res) => {
+          this.currentUser.set(res.data);
+          this.isAuthenticated.set(true);
+          resolve();
+        },
+        error: () => {
+          this.currentUser.set(null);
+          this.isAuthenticated.set(false);
+          resolve();
+        }
+      });
     });
   }
 
@@ -83,5 +89,9 @@ export class AuthService {
 
   refreshTokens() {
     return this.http.post(`${this.API_URL}/refresh-token`, {}, { withCredentials: true });
+  }
+
+  disconnectGoogle() {
+    return this.http.delete<{data: User}>(`${this.API_URL}/google`, { withCredentials: true });
   }
 }

@@ -7,6 +7,7 @@
 import prisma from '../utils/prisma.js';
 import logger from '../config/logger.js';
 import ApiError from '../utils/apiError.js';
+import { fetchCalendarEvents } from './google.service.js';
 
 /** Map JS Date.getDay() (0=Sun) to day-of-week names used in the schema. */
 const DAY_NAMES = [
@@ -112,6 +113,115 @@ export async function setWorkingHours(businessId, hours) {
   return result;
 }
 
+export async function getBlocks(businessId, query) {
+  const { startDate, endDate } = query;
+  
+  const where = { businessId };
+  if (startDate && endDate) {
+    where.date = {
+      gte: new Date(startDate),
+      lte: new Date(endDate)
+    };
+  }
+
+  return prisma.availabilityBlock.findMany({
+    where,
+    orderBy: [{ date: 'asc' }, { startTime: 'asc' }]
+  });
+}
+
+export async function createBlock(businessId, data) {
+  const date = new Date(data.date);
+  date.setUTCHours(0, 0, 0, 0);
+
+  const startMins = timeToMinutes(data.startTime);
+  const endMins = timeToMinutes(data.endTime);
+
+  return prisma.$transaction(async (tx) => {
+    // 1. Fetch existing blocks for this date
+    const existingBlocks = await tx.availabilityBlock.findMany({
+      where: {
+        businessId,
+        date
+      }
+    });
+
+    // 2. Find overlaps or adjacencies
+    const overlapping = [];
+    for (const b of existingBlocks) {
+      const bStart = timeToMinutes(b.startTime);
+      const bEnd = timeToMinutes(b.endTime);
+
+      // touching or overlapping condition
+      if (bEnd >= startMins && bStart <= endMins) {
+        overlapping.push({ id: b.id, start: bStart, end: bEnd });
+      }
+    }
+
+    // 3. Compute merged boundaries
+    let mergedStart = startMins;
+    let mergedEnd = endMins;
+
+    for (const b of overlapping) {
+      mergedStart = Math.min(mergedStart, b.start);
+      mergedEnd = Math.max(mergedEnd, b.end);
+    }
+
+    // 4. Delete overlapping blocks
+    if (overlapping.length > 0) {
+      await tx.availabilityBlock.deleteMany({
+        where: {
+          id: { in: overlapping.map(o => o.id) }
+        }
+      });
+    }
+
+    // 5. Create merged block
+    return tx.availabilityBlock.create({
+      data: {
+        businessId,
+        date,
+        startTime: minutesToTime(mergedStart),
+        endTime: minutesToTime(mergedEnd)
+      }
+    });
+  });
+}
+
+export async function clearBlocks(businessId, query) {
+  const { startDate, endDate } = query;
+  const where = { businessId };
+  if (startDate && endDate) {
+    where.date = {
+      gte: new Date(startDate),
+      lte: new Date(endDate)
+    };
+  }
+  
+  const result = await prisma.availabilityBlock.deleteMany({ where });
+  return { deletedCount: result.count };
+}
+
+export async function deleteBlock(businessId, blockId) {
+  return prisma.availabilityBlock.delete({
+    where: { id: blockId, businessId }
+  });
+}
+
+export async function updateBlock(businessId, blockId, data) {
+  const date = new Date(data.date);
+  date.setUTCHours(0, 0, 0, 0);
+
+  return prisma.availabilityBlock.update({
+    where: { id: blockId, businessId },
+    data: {
+      date,
+      startTime: data.startTime,
+      endTime: data.endTime
+    }
+  });
+}
+
 /**
  * Get available booking time slots for a business on a given date.
  *
@@ -145,26 +255,22 @@ export async function getAvailableSlots(businessId, { date, serviceId }) {
 
   const durationMinutes = service.duration; // duration in minutes
 
-  // 2. Get the day of week from the date
+  // 2. Get AvailabilityBlocks for that day
   const targetDate = new Date(date);
-  const dayOfWeek = DAY_NAMES[targetDate.getUTCDay()];
+  targetDate.setUTCHours(0, 0, 0, 0);
 
-  // 3. Get working hours for that day
-  const workingHoursEntry = await prisma.workingHours.findFirst({
+  const blocks = await prisma.availabilityBlock.findMany({
     where: {
       businessId,
-      dayOfWeek,
+      date: targetDate,
     },
   });
 
-  if (!workingHoursEntry || workingHoursEntry.isClosed) {
+  if (blocks.length === 0) {
     return [];
   }
 
-  const openMinutes = timeToMinutes(workingHoursEntry.openTime);
-  const closeMinutes = timeToMinutes(workingHoursEntry.closeTime);
-
-  // 4. Get existing bookings for that date (only active ones)
+  // 3. Get existing bookings for that date
   const dayStart = new Date(date);
   dayStart.setUTCHours(0, 0, 0, 0);
 
@@ -194,24 +300,53 @@ export async function getAvailableSlots(businessId, { date, serviceId }) {
     end: timeToMinutes(booking.endTime),
   }));
 
-  // 5. Generate candidate time slots
-  const availableSlots = [];
+  // 4. Fetch Google Calendar Events to subtract as busy time
+  const ownerMember = await prisma.businessMember.findFirst({
+    where: { businessId, role: 'OWNER' },
+    include: { user: true }
+  });
 
-  for (let slotStart = openMinutes; slotStart + durationMinutes <= closeMinutes; slotStart += durationMinutes) {
-    const slotEnd = slotStart + durationMinutes;
-
-    // 6. Check if this slot overlaps with any existing booking
-    const hasOverlap = bookedSlots.some(
-      (booked) => slotStart < booked.end && slotEnd > booked.start
-    );
-
-    if (!hasOverlap) {
-      availableSlots.push({
-        startTime: minutesToTime(slotStart),
-        endTime: minutesToTime(slotEnd),
-      });
+  if (ownerMember && ownerMember.user) {
+    const googleEvents = await fetchCalendarEvents(ownerMember.user, dayStart.toISOString(), dayEnd.toISOString());
+    for (const event of googleEvents) {
+      if (!event.start || !event.end) {
+        continue;
+      }
+      const startDt = new Date(event.start);
+      const endDt = new Date(event.end);
+      // convert to minutes
+      const startMins = startDt.getHours() * 60 + startDt.getMinutes();
+      const endMins = endDt.getHours() * 60 + endDt.getMinutes();
+      bookedSlots.push({ start: startMins, end: endMins });
     }
   }
+
+  // 5. Generate candidate time slots from all availability blocks
+  const availableSlots = [];
+
+  for (const block of blocks) {
+    const blockStart = timeToMinutes(block.startTime);
+    const blockEnd = timeToMinutes(block.endTime);
+
+    for (let slotStart = blockStart; slotStart + durationMinutes <= blockEnd; slotStart += durationMinutes) {
+      const slotEnd = slotStart + durationMinutes;
+
+      // 6. Check if this slot overlaps with any existing booking or Google event
+      const hasOverlap = bookedSlots.some(
+        (booked) => slotStart < booked.end && slotEnd > booked.start
+      );
+
+      if (!hasOverlap) {
+        availableSlots.push({
+          startTime: minutesToTime(slotStart),
+          endTime: minutesToTime(slotEnd),
+        });
+      }
+    }
+  }
+
+  // Sort available slots chronologically
+  availableSlots.sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime));
 
   return availableSlots;
 }

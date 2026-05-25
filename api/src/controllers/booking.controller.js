@@ -4,7 +4,7 @@ import * as bookingService from '../services/booking.service.js';
 import { parsePagination } from '../utils/pagination.js';
 
 /**
- * Create a new booking.
+ * Create a new booking (Authenticated).
  * @route POST /api/v1/bookings
  */
 export const create = catchAsync(async (req, res) => {
@@ -12,6 +12,15 @@ export const create = catchAsync(async (req, res) => {
     customerId: req.user.id,
     ...req.body,
   });
+  return created(res, { data: result });
+});
+
+/**
+ * Create a new booking (Public/Guest).
+ * @route POST /api/v1/bookings/public
+ */
+export const publicCreate = catchAsync(async (req, res) => {
+  const result = await bookingService.publicCreate(req.body);
   return created(res, { data: result });
 });
 

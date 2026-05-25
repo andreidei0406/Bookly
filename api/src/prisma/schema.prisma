@@ -115,6 +115,7 @@ model Business {
   services    Service[]
   bookings    Booking[]
   workingHours WorkingHours[]
+  availabilityBlocks AvailabilityBlock[]
 
   @@map("businesses")
 }
@@ -172,6 +173,20 @@ model WorkingHours {
 
   @@unique([businessId, dayOfWeek])
   @@map("working_hours")
+}
+
+model AvailabilityBlock {
+  id         String   @id @default(cuid())
+  businessId String
+  date       DateTime @db.Date
+  startTime  String   // HH:mm
+  endTime    String   // HH:mm
+  createdAt  DateTime @default(now())
+  
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, date])
+  @@map("availability_blocks")
 }
 
 model StaffSchedule {

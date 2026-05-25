@@ -40,6 +40,30 @@ export const createBookingSchema = {
 };
 
 /**
+ * Schema for creating a new booking as a guest.
+ * @type {{ body: z.ZodObject }}
+ */
+export const publicCreateBookingSchema = {
+  body: z.object({
+    businessId: z.string({ required_error: 'Business ID is required' }),
+    serviceId: z.string({ required_error: 'Service ID is required' }),
+    guestName: z.string({ required_error: 'Guest name is required' }).trim(),
+    guestEmail: z.string({ required_error: 'Guest email is required' }).email('Invalid email address'),
+    staffId: z.string().optional(),
+    date: z
+      .string({ required_error: 'Date is required' })
+      .regex(dateRegex, 'Date must be in YYYY-MM-DD format'),
+    startTime: z
+      .string({ required_error: 'Start time is required' })
+      .regex(timeRegex, 'Start time must be in HH:mm format (24-hour)'),
+    notes: z
+      .string()
+      .trim()
+      .optional(),
+  }),
+};
+
+/**
  * Schema for updating a booking's status.
  * @type {{ body: z.ZodObject }}
  */

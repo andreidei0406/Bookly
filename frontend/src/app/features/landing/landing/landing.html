@@ -1,0 +1,75 @@
+<div class="relative min-h-screen flex flex-col overflow-hidden bg-background">
+  <!-- Dynamic radial gradient background -->
+  <div class="absolute inset-0 -z-10 bg-[radial-gradient(45%_40%_at_50%_60%,rgba(59,130,246,0.12),transparent)]"></div>
+
+  <!-- Header -->
+  <header class="flex items-center justify-between px-6 py-4 max-w-7xl mx-auto w-full z-10">
+    <div class="flex items-center gap-8">
+      <div class="flex items-center gap-2 cursor-pointer" routerLink="/">
+        <div class="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center shadow-md">
+          <span class="text-white font-bold text-lg leading-none">B</span>
+        </div>
+        <span class="font-bold text-xl text-gray-900 tracking-tight">Bookly</span>
+      </div>
+      <nav class="hidden md:flex gap-6">
+        <a routerLink="/pricing" class="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">Pricing</a>
+      </nav>
+    </div>
+
+    <div class="flex items-center gap-4">
+      <ng-container *ngIf="!currentUser()">
+        <a routerLink="/login" class="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">Log in</a>
+        <a routerLink="/register" class="text-sm font-medium bg-gray-900 text-white px-4 py-2 rounded-full hover:bg-gray-800 transition-colors shadow-sm">Get Started</a>
+      </ng-container>
+      <ng-container *ngIf="currentUser()">
+        <a routerLink="/dashboard" class="text-sm font-medium bg-brand-600 text-white px-4 py-2 rounded-full hover:bg-brand-700 transition-colors shadow-sm">Go to Dashboard</a>
+      </ng-container>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <main class="flex-grow flex items-center justify-center pt-20 pb-32 px-4 z-10">
+    <div class="mx-auto max-w-3xl text-center">
+      
+      <!-- Badge -->
+      <div class="mb-8 inline-flex items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-4 py-1.5 text-sm font-medium text-brand-700 shadow-sm animate-[fadeIn_0.5s_ease-out]">
+        <svg class="w-4 h-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+        </svg>
+        Scheduling made simple
+      </div>
+      
+      <!-- Headline -->
+      <h1 class="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-gray-900 leading-tight mb-6 animate-[fadeInUp_0.7s_ease-out]">
+        Schedule meetings <br class="hidden sm:block" />
+        <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-500 to-purple-500">without the back-and-forth</span>
+      </h1>
+      
+      <!-- Subheadline -->
+      <p class="mt-6 text-lg sm:text-xl leading-8 text-gray-600 max-w-2xl mx-auto animate-[fadeInUp_0.9s_ease-out]">
+        Bookly connects to your calendar, shows your real-time availability, and lets anyone book time with you instantly. No more "what time works for you?" emails.
+      </p>
+      
+      <!-- CTA Buttons -->
+      <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 animate-[fadeInUp_1.1s_ease-out]">
+        <ng-container *ngIf="!currentUser()">
+          <a routerLink="/register" class="w-full sm:w-auto text-base font-medium bg-brand-600 text-white px-8 py-3.5 rounded-full hover:bg-brand-700 transition-colors shadow-md hover:shadow-lg flex items-center justify-center gap-2">
+            Start Scheduling Free
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+          </a>
+          <a routerLink="/login" class="w-full sm:w-auto text-base font-medium bg-white border border-gray-200 text-gray-700 px-8 py-3.5 rounded-full hover:bg-gray-50 transition-colors shadow-sm flex items-center justify-center">
+            Sign In
+          </a>
+        </ng-container>
+        
+        <ng-container *ngIf="currentUser()">
+          <a routerLink="/dashboard" class="w-full sm:w-auto text-base font-medium bg-brand-600 text-white px-8 py-3.5 rounded-full hover:bg-brand-700 transition-colors shadow-md hover:shadow-lg flex items-center justify-center gap-2">
+            Go to Dashboard
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+          </a>
+        </ng-container>
+      </div>
+      
+    </div>
+  </main>
+</div>

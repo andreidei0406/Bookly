@@ -62,6 +62,7 @@ export async function register({ email, password, firstName, lastName, phone }) 
       lastName,
       phone: phone || null,
     },
+    include: { memberships: { include: { business: true } } }
   });
 
   const accessToken = generateAccessToken(user);
@@ -96,7 +97,10 @@ export async function register({ email, password, firstName, lastName, phone }) 
  * @returns {Promise<{user: object, accessToken: string, refreshToken: string}>}
  */
 export async function login({ email, password }) {
-  const user = await prisma.user.findUnique({ where: { email } });
+  const user = await prisma.user.findUnique({ 
+    where: { email },
+    include: { memberships: { include: { business: true } } }
+  });
   if (!user) {
     throw ApiError.unauthorized('Invalid email or password');
   }
@@ -334,6 +338,7 @@ export async function googleLogin(googleData) {
           googleTokenExpiry: expiryDate,
           emailVerified: true,
         },
+        include: { memberships: { include: { business: true } } },
       });
     } else {
       // Create new user via Google
@@ -349,6 +354,7 @@ export async function googleLogin(googleData) {
           googleTokenExpiry: expiryDate,
           emailVerified: true,
         },
+        include: { memberships: { include: { business: true } } },
       });
       // Fire-and-forget welcome email
       sendWelcomeEmail(user);
@@ -362,6 +368,7 @@ export async function googleLogin(googleData) {
         googleRefreshToken: refreshToken || user.googleRefreshToken,
         googleTokenExpiry: expiryDate,
       },
+      include: { memberships: { include: { business: true } } },
     });
   }
 

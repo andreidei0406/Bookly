@@ -1,6 +1,7 @@
 import { created, success, noContent } from '../utils/apiResponse.js';
 import catchAsync from '../utils/catchAsync.js';
 import * as authService from '../services/auth.service.js';
+import prisma from '../utils/prisma.js';
 
 /**
  * Register a new user account.
@@ -140,7 +141,38 @@ export const googleCallback = catchAsync(async (req, res) => {
  * @route GET /api/v1/auth/me
  */
 export const getMe = catchAsync(async (req, res) => {
-  // auth.middleware handles verification, so req.user is guaranteed to be valid
-  return success(res, { data: req.user });
+  // Fetch fresh user data with memberships
+  const user = await prisma.user.findUnique({
+    where: { id: req.user.id },
+    include: { memberships: { include: { business: true } } }
+  });
+  
+  if (!user) {
+    return res.status(401).json({ error: 'User not found' });
+  }
+  
+  // exclude password
+  const { password, ...safeUser } = user;
+  
+  return success(res, { data: safeUser });
 });
 
+/**
+ * Disconnect Google account
+ * @route DELETE /api/v1/auth/google
+ */
+export const disconnectGoogle = catchAsync(async (req, res) => {
+  const user = await prisma.user.update({
+    where: { id: req.user.id },
+    data: {
+      googleId: null,
+      googleAccessToken: null,
+      googleRefreshToken: null,
+      googleTokenExpiry: null,
+    },
+    include: { memberships: { include: { business: true } } }
+  });
+  
+  const { password, ...safeUser } = user;
+  return success(res, { data: safeUser, message: 'Google account disconnected' });
+});

@@ -40,6 +40,13 @@ router.post(
 router.get('/', businessController.findAll);
 
 /**
+ * @route GET /api/v1/businesses/slug/:slug
+ * @desc Get a business by slug (public)
+ * @access Public
+ */
+router.get('/slug/:slug', businessController.findBySlug);
+
+/**
  * @route GET /api/v1/businesses/:id
  * @desc Get a business by ID (public)
  * @access Public

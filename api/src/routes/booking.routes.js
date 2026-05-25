@@ -4,13 +4,25 @@ import validate from '../middleware/validate.middleware.js';
 import authenticate from '../middleware/auth.middleware.js';
 import {
   createBookingSchema,
+  publicCreateBookingSchema,
   updateBookingStatusSchema,
   rescheduleBookingSchema,
 } from '../validators/booking.validator.js';
 
 const router = Router();
 
-// All booking routes require authentication
+/**
+ * @route POST /api/v1/bookings/public
+ * @desc Create a new booking as a guest
+ * @access Public
+ */
+router.post(
+  '/public',
+  validate(publicCreateBookingSchema),
+  bookingController.publicCreate
+);
+
+// All subsequent booking routes require authentication
 router.use(authenticate);
 
 /**

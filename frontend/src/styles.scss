@@ -2,4 +2,56 @@
 @tailwind components;
 @tailwind utilities;
 
-/* You can add global styles to this file, and also import other style files */
+@layer base {
+  :root {
+    --background: 100% 0 0;
+    --foreground: 14.5% 0 0;
+    --card: 100% 0 0;
+    --card-foreground: 14.5% 0 0;
+    --popover: 100% 0 0;
+    --popover-foreground: 14.5% 0 0;
+    --primary: 62.3% 0.214 259.815;
+    --primary-foreground: 98.5% 0 0;
+    --secondary: 97% 0 0;
+    --secondary-foreground: 20.5% 0 0;
+    --muted: 97% 0 0;
+    --muted-foreground: 55.6% 0 0;
+    --accent: 97% 0 0;
+    --accent-foreground: 20.5% 0 0;
+    --destructive: 57.7% 0.245 27.325;
+    --border: 92.2% 0 0;
+    --input: 92.2% 0 0;
+    --ring: 62.3% 0.214 259.815;
+    --radius: 0.625rem;
+  }
+
+  .dark {
+    --background: 14.5% 0 0;
+    --foreground: 98.5% 0 0;
+    --card: 20.5% 0 0;
+    --card-foreground: 98.5% 0 0;
+    --popover: 20.5% 0 0;
+    --popover-foreground: 98.5% 0 0;
+    --primary: 92.2% 0 0;
+    --primary-foreground: 20.5% 0 0;
+    --secondary: 26.9% 0 0;
+    --secondary-foreground: 98.5% 0 0;
+    --muted: 26.9% 0 0;
+    --muted-foreground: 70.8% 0 0;
+    --accent: 26.9% 0 0;
+    --accent-foreground: 98.5% 0 0;
+    --destructive: 70.4% 0.191 22.216;
+    --border: 100% 0 0 / 10%;
+    --input: 100% 0 0 / 15%;
+    --ring: 55.6% 0 0;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+}

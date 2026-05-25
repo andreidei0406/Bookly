@@ -220,7 +220,70 @@ export async function create({ customerId, businessId, serviceId, staffId, date,
 
   logger.info(`Booking created: ${booking.id} for customer ${customerId}`);
 
-  return booking;
+  let checkoutUrl = null;
+  if (service.paymentType === 'REQUIRED') {
+    try {
+      const { createBookingCheckoutSession } = await import('./stripe.service.js');
+      const session = await createBookingCheckoutSession({ bookingId: booking.id });
+      checkoutUrl = session.url;
+    } catch (err) {
+      logger.error('Failed to create Stripe checkout session', err);
+    }
+  }
+
+  return { ...booking, checkoutUrl };
+}
+
+/**
+ * Create a new booking as a guest (Public).
+ * Looks up or creates a user account based on guestEmail, then creates the booking.
+ * @param {object} params
+ * @param {string} params.guestName - The guest's full name.
+ * @param {string} params.guestEmail - The guest's email.
+ * @param {string} params.businessId - The business ID.
+ * @param {string} params.serviceId - The service ID.
+ * @param {string} [params.staffId] - Optional staff member ID.
+ * @param {string} params.date - Booking date (YYYY-MM-DD).
+ * @param {string} params.startTime - Start time (HH:mm).
+ * @param {string} [params.notes] - Optional customer notes.
+ * @returns {Promise<object>} The created booking.
+ */
+export async function publicCreate({ guestName, guestEmail, businessId, serviceId, staffId, date, startTime, notes }) {
+  // Try to find existing user by email
+  let customer = await prisma.user.findUnique({
+    where: { email: guestEmail },
+  });
+
+  // If no user exists, create a basic user account for the guest
+  if (!customer) {
+    const nameParts = guestName.trim().split(' ');
+    const firstName = nameParts[0] || 'Guest';
+    const lastName = nameParts.slice(1).join(' ') || '';
+
+    customer = await prisma.user.create({
+      data: {
+        email: guestEmail,
+        firstName,
+        lastName,
+        password: null, // No password since they are a guest
+        platformRole: 'USER',
+        isActive: true,
+        emailVerified: false,
+      },
+    });
+    logger.info(`Created new shadow user ${customer.id} for guest booking (${guestEmail})`);
+  }
+
+  // Delegate the actual booking creation to the standard `create` method
+  return create({
+    customerId: customer.id,
+    businessId,
+    serviceId,
+    staffId,
+    date,
+    startTime,
+    notes,
+  });
 }
 
 /**

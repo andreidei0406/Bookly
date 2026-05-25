@@ -65,3 +65,15 @@ export const availableSlotsSchema = {
     serviceId: z.string({ required_error: 'Service ID is required' }),
   }),
 };
+
+/**
+ * Schema for creating a specific availability block.
+ * @type {{ body: z.ZodObject }}
+ */
+export const createBlockSchema = {
+  body: z.object({
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format'),
+    startTime: z.string().regex(timeRegex, 'Open time must be in HH:mm format (24-hour)'),
+    endTime: z.string().regex(timeRegex, 'Close time must be in HH:mm format (24-hour)'),
+  }),
+};

@@ -9,6 +9,9 @@ import bookingRoutes from './booking.routes.js';
 import notificationRoutes from './notification.routes.js';
 import stripeRoutes from './stripe.routes.js';
 
+import analyticsRoutes from './analytics.routes.js';
+import googleRoutes from './google.routes.js';
+
 const router = Router();
 
 router.use('/auth', authRoutes);
@@ -20,5 +23,7 @@ router.use('/businesses/:businessId/availability', availabilityRoutes);
 router.use('/bookings', bookingRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/stripe', stripeRoutes);
+router.use('/analytics', analyticsRoutes);
+router.use('/integrations/google', googleRoutes);
 
 export default router;

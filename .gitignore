@@ -18,7 +18,6 @@ node_modules/
 # Angular CLI and build artefacts
 /.angular-cli.json
 /.ng/
-
 # TypeScript cache
 *.tsbuildinfo
 
@@ -40,3 +39,6 @@ api/coverage/
 # IDEs and Editors
 .vscode/
 .idea/
+
+DEMO/app
+DEMO/components

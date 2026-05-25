@@ -102,7 +102,12 @@ router.post(
 router.get(
   '/google',
   passport.authenticate('google', {
-    scope: ['profile', 'email', 'https://www.googleapis.com/auth/calendar.events'],
+    scope: [
+      'profile', 
+      'email', 
+      'https://www.googleapis.com/auth/calendar.events',
+      'https://www.googleapis.com/auth/calendar.readonly'
+    ],
     accessType: 'offline', // Request a refresh token
     prompt: 'consent',     // Force consent screen to always get refresh token
   })
@@ -117,6 +122,17 @@ router.get(
   '/google/callback',
   passport.authenticate('google', { session: false, failureRedirect: '/login' }),
   authController.googleCallback
+);
+
+/**
+ * @route DELETE /api/v1/auth/google
+ * @desc Disconnect Google account
+ * @access Private
+ */
+router.delete(
+  '/google',
+  authenticate,
+  authController.disconnectGoogle
 );
 
 export default router;

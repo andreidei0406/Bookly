@@ -33,6 +33,15 @@ export const findById = catchAsync(async (req, res) => {
 });
 
 /**
+ * Get a single business by slug.
+ * @route GET /api/v1/businesses/slug/:slug
+ */
+export const findBySlug = catchAsync(async (req, res) => {
+  const business = await businessService.findBySlug(req.params.slug);
+  return success(res, { data: business });
+});
+
+/**
  * Update a business by ID.
  * @route PATCH /api/v1/businesses/:id
  */

@@ -162,6 +162,37 @@ export async function findById(id) {
 }
 
 /**
+ * Find a business by slug, including active services and working hours.
+ * @param {string} slug - The business slug.
+ * @returns {Promise<object>} The business with relations.
+ */
+export async function findBySlug(slug) {
+  const business = await prisma.business.findUnique({
+    where: { slug, deletedAt: null },
+    include: {
+      services: {
+        where: { isActive: true, deletedAt: null },
+      },
+      workingHours: true,
+      members: {
+        where: { isActive: true },
+        include: {
+          user: {
+            select: { id: true, firstName: true, lastName: true, avatar: true },
+          },
+        },
+      },
+    },
+  });
+
+  if (!business) {
+    throw ApiError.notFound('Business not found');
+  }
+
+  return business;
+}
+
+/**
  * Update a business.
  * @param {string} id - The business ID.
  * @param {object} data - Fields to update.

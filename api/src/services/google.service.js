@@ -91,3 +91,53 @@ export async function createCalendarEventWithMeet(user, booking, service) {
     return null;
   }
 }
+
+/**
+ * Fetch calendar events for a user within a date range
+ * @param {object} user - The user object with Google tokens
+ * @param {string} startDate - ISO string
+ * @param {string} endDate - ISO string
+ * @returns {Promise<object[]>} Array of events { id, title, start, end }
+ */
+export async function fetchCalendarEvents(user, startDate, endDate) {
+  if (!user.googleAccessToken) {
+    return [];
+  }
+
+  try {
+    oauth2Client.setCredentials({
+      access_token: user.googleAccessToken,
+      refresh_token: user.googleRefreshToken,
+      expiry_date: user.googleTokenExpiry?.getTime(),
+    });
+
+    const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+    
+    // Default to a 2 week range if not provided
+    const timeMin = startDate ? new Date(startDate).toISOString() : new Date().toISOString();
+    const timeMax = endDate 
+      ? new Date(endDate).toISOString() 
+      : new Date(new Date().setDate(new Date().getDate() + 14)).toISOString();
+
+    const response = await calendar.events.list({
+      calendarId: 'primary',
+      timeMin,
+      timeMax,
+      maxResults: 100,
+      singleEvents: true,
+      orderBy: 'startTime',
+    });
+
+    const events = response.data.items || [];
+    
+    return events.map(item => ({
+      id: item.id,
+      title: item.summary || 'Busy',
+      start: item.start.dateTime || item.start.date,
+      end: item.end.dateTime || item.end.date,
+    }));
+  } catch (error) {
+    logger.error(`Failed to fetch Google Calendar events: ${error.message}`);
+    return [];
+  }
+}
