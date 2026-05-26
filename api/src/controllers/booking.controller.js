@@ -4,12 +4,12 @@ import * as bookingService from '../services/booking.service.js';
 import { parsePagination } from '../utils/pagination.js';
 
 /**
- * Create a new booking (Authenticated).
+ * Create a new booking (Authenticated host self-booking, rarely used but supported).
  * @route POST /api/v1/bookings
  */
 export const create = catchAsync(async (req, res) => {
   const result = await bookingService.create({
-    customerId: req.user.id,
+    hostUsername: req.user.username,
     ...req.body,
   });
   return created(res, { data: result });
@@ -25,16 +25,15 @@ export const publicCreate = catchAsync(async (req, res) => {
 });
 
 /**
- * List bookings with pagination and filters.
+ * List bookings for the authenticated host with pagination and filters.
  * @route GET /api/v1/bookings
  */
 export const findAll = catchAsync(async (req, res) => {
   const pagination = parsePagination(req.query);
-  const { status, businessId, from, to } = req.query;
-  const filters = { status, businessId, from, to };
+  const { status, from, to } = req.query;
+  const filters = { status, from, to };
   const { data, meta } = await bookingService.findAll(
     req.user.id,
-    req.user.platformRole,
     { ...pagination, ...filters }
   );
   return success(res, { data, meta });

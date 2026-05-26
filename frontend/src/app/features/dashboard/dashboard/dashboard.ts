@@ -9,11 +9,12 @@ import interactionPlugin from '@fullcalendar/interaction';
 import { AuthService } from '../../../core/services/auth.service';
 import { AvailabilityService } from '../../../core/services/availability.service';
 import { IntegrationService } from '../../../core/services/integration.service';
+import { BookingService } from '../../../core/services/booking.service';
 import { SettingsComponent } from '../settings/settings.component';
 import { BookingsListComponent } from '../bookings/bookings-list.component';
 import { environment } from '../../../../environments/environment';
 import { forkJoin, zip, from, firstValueFrom } from 'rxjs';
-import { concatMap, toArray } from 'rxjs/operators';
+import { concatMap, toArray, catchError } from 'rxjs/operators';
 
 type DashboardTab = 'calendar' | 'bookings' | 'profile';
 
@@ -30,6 +31,7 @@ export class Dashboard implements OnInit {
   private authService = inject(AuthService);
   private availabilityService = inject(AvailabilityService);
   private integrationService = inject(IntegrationService);
+  private bookingService = inject(BookingService);
 
   activeView = signal<DashboardTab>('calendar');
   currentDate = signal(new Date());
@@ -44,18 +46,22 @@ export class Dashboard implements OnInit {
   showShareDialog = signal(false);
   linkCopied = signal(false);
   meetingName = signal('');
+  meetingDuration = signal<number>(15);
   
   // Track unsaved blocks
   unsavedBlocks = signal<any[]>([]);
 
   bookingUrl = computed(() => {
     const user = this.currentUser() as any;
-    if (!user || !user.memberships || user.memberships.length === 0) return '';
-    const slug = user.memberships[0].business?.slug || user.memberships[0].businessId;
-    let url = `${window.location.origin}/booking/${slug}`;
+    if (!user) return '';
+    const username = user.username;
+    let url = `${window.location.origin}/booking/${username}`;
     const name = this.meetingName().trim();
+    const duration = this.meetingDuration();
+    
+    url += `?duration=${duration}`;
     if (name) {
-      url += `?meeting=${encodeURIComponent(name)}`;
+      url += `&meeting=${encodeURIComponent(name)}`;
     }
     return url;
   });
@@ -74,6 +80,7 @@ export class Dashboard implements OnInit {
     eventOverlap: true,
     slotMinTime: '06:00:00',
     slotMaxTime: '22:00:00',
+    slotDuration: '00:15:00',
     allDaySlot: false,
     editable: true,
     eventDurationEditable: true,
@@ -90,19 +97,23 @@ export class Dashboard implements OnInit {
 
   fetchEvents(info: any, successCallback: Function, failureCallback: Function) {
     const user = this.currentUser() as any;
-    if (!user?.memberships || user.memberships.length === 0) {
+    if (!user) {
       successCallback([]);
       return;
     }
-    const businessId = user.memberships[0].businessId;
     
     this.isFetching.set(true);
 
     zip(
-      this.availabilityService.getBlocks(businessId, info.startStr, info.endStr),
-      this.integrationService.getGoogleEvents(info.startStr, info.endStr)
+      this.availabilityService.getBlocks(info.startStr, info.endStr),
+      this.integrationService.getGoogleEvents(info.startStr, info.endStr).pipe(
+        catchError(() => from([{ data: [] }]))
+      ),
+      this.bookingService.getHostBookings('CONFIRMED').pipe(
+        catchError(() => from([{ data: [] }]))
+      )
     ).subscribe({
-      next: ([blocksRes, googleRes]) => {
+      next: ([blocksRes, googleRes, bookingsRes]: [any, any, any]) => {
         const events = [];
         
         if (blocksRes.data) {
@@ -113,6 +124,7 @@ export class Dashboard implements OnInit {
             end: `${block.date.split('T')[0]}T${block.endTime}:00`,
             backgroundColor: '#3b82f6',
             borderColor: '#2563eb',
+            classNames: ['cursor-pointer'],
             extendedProps: { status: 'available', type: 'block' }
           })));
         }
@@ -123,11 +135,25 @@ export class Dashboard implements OnInit {
             title: ge.title,
             start: ge.start,
             end: ge.end,
-            backgroundColor: 'rgba(254, 202, 202, 0.8)', // red-200 with 0.8 opacity
-            borderColor: '#f87171', // red-400
-            textColor: '#991b1b', // red-800
+            textColor: '#b91c1c',
             editable: false,
+            classNames: ['google-calendar-event', 'cursor-pointer'],
             extendedProps: { status: 'busy', type: 'google' }
+          })));
+        }
+
+        if (bookingsRes.data) {
+          events.push(...bookingsRes.data.map((booking: any) => ({
+            id: booking.id,
+            title: `Booking: ${booking.guestName}`,
+            start: `${booking.date.split('T')[0]}T${booking.startTime}:00`,
+            end: `${booking.date.split('T')[0]}T${booking.endTime}:00`,
+            backgroundColor: '#10b981', // green-500
+            borderColor: '#059669', // green-600
+            textColor: '#ffffff',
+            editable: false,
+            classNames: ['cursor-pointer'],
+            extendedProps: { status: 'booked', type: 'booking', booking }
           })));
         }
         
@@ -140,6 +166,7 @@ export class Dashboard implements OnInit {
           end: `${block.date}T${block.endTime}:00`,
           backgroundColor: '#93c5fd',
           borderColor: '#60a5fa',
+          classNames: ['cursor-pointer'],
           extendedProps: { status: 'unsaved', type: 'block' }
         })));
         
@@ -176,6 +203,7 @@ export class Dashboard implements OnInit {
       end: selectInfo.endStr,
       backgroundColor: '#93c5fd',
       borderColor: '#60a5fa',
+      classNames: ['cursor-pointer'],
       extendedProps: { status: 'unsaved', type: 'block' }
     });
 
@@ -241,18 +269,14 @@ export class Dashboard implements OnInit {
     const blocks = this.unsavedBlocks();
     if (blocks.length === 0) return;
     
-    const user = this.currentUser() as any;
-    if (!user?.memberships || user.memberships.length === 0) return;
-    const businessId = user.memberships[0].businessId;
-
     this.isSaving.set(true);
 
     from(blocks).pipe(
       concatMap(block => {
         if (block.action === 'update' && !block.id.startsWith('temp-')) {
-          return this.availabilityService.updateBlock(businessId, block.id, block);
+          return this.availabilityService.updateBlock(block.id, block);
         } else {
-          return this.availabilityService.createBlock(businessId, block);
+          return this.availabilityService.createBlock(block);
         }
       }),
       toArray()
@@ -291,16 +315,15 @@ export class Dashboard implements OnInit {
   }
 
   clearAvailability() {
-    const user = this.currentUser() as any;
-    if (!user?.memberships || user.memberships.length === 0) return;
-    const businessId = user.memberships[0].businessId;
-    
     const calendarApi = this.calendarComponent.getApi();
     const info = calendarApi.view;
     
     if (confirm('Are you sure you want to clear all availability in this view?')) {
       this.isFetching.set(true);
-      this.availabilityService.clearBlocks(businessId, info.activeStart.toISOString(), info.activeEnd.toISOString()).subscribe({
+      const startStr = info.activeStart.toISOString().split('T')[0];
+      const endStr = info.activeEnd.toISOString().split('T')[0];
+      
+      this.availabilityService.clearBlocks(startStr, endStr).subscribe({
         next: () => {
           this.unsavedBlocks.set([]);
           calendarApi.refetchEvents();
@@ -324,10 +347,6 @@ export class Dashboard implements OnInit {
   deleteSelectedBlock() {
     const event = this.selectedEvent();
     if (!event) return;
-    
-    const user = this.currentUser() as any;
-    if (!user?.memberships || user.memberships.length === 0) return;
-    const businessId = user.memberships[0].businessId;
 
     if (event.extendedProps.status === 'unsaved') {
       const calendarApi = this.calendarComponent.getApi();
@@ -340,7 +359,7 @@ export class Dashboard implements OnInit {
     }
 
     if (confirm('Delete this availability block?')) {
-      this.availabilityService.deleteBlock(businessId, event.id).subscribe({
+      this.availabilityService.deleteBlock(event.id).subscribe({
         next: () => {
           this.calendarComponent.getApi().refetchEvents();
           this.closeEventDialog();

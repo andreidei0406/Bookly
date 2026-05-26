@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import * as userController from '../controllers/user.controller.js';
+import * as availabilityController from '../controllers/availability.controller.js';
 import validate from '../middleware/validate.middleware.js';
 import authenticate from '../middleware/auth.middleware.js';
 import { requirePlatformRole } from '../middleware/rbac.middleware.js';
@@ -7,10 +8,40 @@ import {
   updateProfileSchema,
   changePasswordSchema,
 } from '../validators/user.validator.js';
+import { availableSlotsSchema } from '../validators/availability.validator.js';
 
 const router = Router();
 
-// All user routes require authentication
+// Public routes
+/**
+ * @route GET /api/v1/users/:username
+ * @desc Get user profile for public booking page
+ * @access Public
+ */
+router.get('/:username', userController.getPublicProfile);
+
+/**
+ * @route GET /api/v1/users/:username/availability/slots
+ * @desc Get available booking slots for a user
+ * @access Public
+ */
+router.get(
+  '/:username/availability/slots',
+  validate(availableSlotsSchema, 'query'),
+  availabilityController.getAvailableSlots
+);
+
+/**
+ * @route GET /api/v1/users/:username/availability/days
+ * @desc Get available booking days for a user in a month
+ * @access Public
+ */
+router.get(
+  '/:username/availability/days',
+  availabilityController.getAvailableDays
+);
+
+// Private routes below
 router.use(authenticate);
 
 /**

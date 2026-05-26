@@ -15,14 +15,32 @@ const BCRYPT_ROUNDS = 12;
 const USER_SELECT_SAFE = {
   id: true,
   email: true,
+  username: true,
   firstName: true,
   lastName: true,
   phone: true,
   avatar: true,
-  role: true,
   createdAt: true,
   updatedAt: true,
 };
+
+/**
+ * Get a user's public profile by username.
+ * @param {string} username - The user's unique username.
+ * @returns {Promise<object>} The public user profile.
+ */
+export async function getPublicProfile(username) {
+  const user = await prisma.user.findUnique({
+    where: { username },
+    select: USER_SELECT_SAFE,
+  });
+
+  if (!user) {
+    throw ApiError.notFound('User not found');
+  }
+
+  return user;
+}
 
 /**
  * Get a user's profile by ID.
@@ -55,9 +73,17 @@ export async function updateProfile(userId, data) {
     throw ApiError.notFound('User not found');
   }
 
+  if (data.username && data.username !== user.username) {
+    const existingUsername = await prisma.user.findUnique({ where: { username: data.username } });
+    if (existingUsername) {
+      throw ApiError.conflict('Username is already taken');
+    }
+  }
+
   const updatedUser = await prisma.user.update({
     where: { id: userId },
     data: {
+      ...(data.username !== undefined && { username: data.username }),
       ...(data.firstName !== undefined && { firstName: data.firstName }),
       ...(data.lastName !== undefined && { lastName: data.lastName }),
       ...(data.phone !== undefined && { phone: data.phone }),

@@ -11,31 +11,6 @@ enum PlatformRole {
   SUPER_ADMIN
 }
 
-enum SubscriptionTier {
-  FREE
-  PRO
-  ULTRA
-}
-
-enum PaymentType {
-  FREE
-  OPTIONAL
-  REQUIRED
-}
-
-enum PaymentStatus {
-  PENDING
-  PAID
-  FAILED
-  REFUNDED
-}
-
-enum BusinessRole {
-  OWNER
-  ADMIN
-  STAFF
-}
-
 enum BookingStatus {
   PENDING
   CONFIRMED
@@ -44,24 +19,9 @@ enum BookingStatus {
   NO_SHOW
 }
 
-enum DayOfWeek {
-  MONDAY
-  TUESDAY
-  WEDNESDAY
-  THURSDAY
-  FRIDAY
-  SATURDAY
-  SUNDAY
-}
-
-enum NotificationType {
-  EMAIL
-  SMS
-  PUSH
-}
-
 model User {
   id                 String          @id @default(cuid())
+  username           String          @unique
   email              String          @unique
   password           String?
   firstName          String
@@ -79,145 +39,38 @@ model User {
   updatedAt          DateTime        @updatedAt
   deletedAt          DateTime?
 
-  memberships   BusinessMember[]
-  bookings      Booking[]       @relation("CustomerBookings")
-  refreshTokens RefreshToken[]
-  notifications Notification[]
+  availabilityBlocks AvailabilityBlock[]
+  bookings           Booking[]       @relation("HostBookings")
+  refreshTokens      RefreshToken[]
 
   @@map("users")
 }
 
-model Business {
-  id                       String           @id @default(cuid())
-  name                     String
-  slug                     String           @unique
-  description              String?
-  email                    String?
-  phone                    String?
-  address                  String?
-  city                     String?
-  state                    String?
-  country                  String?
-  zipCode                  String?
-  timezone                 String           @default("UTC")
-  logo                     String?
-  website                  String?
-  isActive                 Boolean          @default(true)
-  subscriptionTier         SubscriptionTier @default(FREE)
-  stripeCustomerId         String?          @unique
-  stripeSubscriptionId     String?          @unique
-  stripeSubscriptionStatus String?
-  createdAt                DateTime         @default(now())
-  updatedAt                DateTime         @updatedAt
-  deletedAt                DateTime?
-
-  members     BusinessMember[]
-  services    Service[]
-  bookings    Booking[]
-  workingHours WorkingHours[]
-  availabilityBlocks AvailabilityBlock[]
-
-  @@map("businesses")
-}
-
-model BusinessMember {
-  id         String       @id @default(cuid())
-  userId     String
-  businessId String
-  role       BusinessRole @default(STAFF)
-  isActive   Boolean      @default(true)
-  createdAt  DateTime     @default(now())
-  updatedAt  DateTime     @updatedAt
-
-  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  business   Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  bookings   Booking[]    @relation("StaffBookings")
-  schedules  StaffSchedule[]
-
-  @@unique([userId, businessId])
-  @@map("business_members")
-}
-
-model Service {
-  id          String      @id @default(cuid())
-  businessId  String
-  name        String
-  description String?
-  duration    Int         // Duration in minutes
-  price       Decimal     @default(0) @db.Decimal(10, 2)
-  currency    String      @default("USD")
-  paymentType PaymentType @default(FREE)
-  color       String?     // For calendar UI
-  isActive    Boolean     @default(true)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  deletedAt   DateTime?
-
-  business    Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  bookings    Booking[]
-
-  @@map("services")
-}
-
-model WorkingHours {
-  id         String    @id @default(cuid())
-  businessId String
-  dayOfWeek  DayOfWeek
-  openTime   String    // HH:mm format (e.g., "09:00")
-  closeTime  String    // HH:mm format (e.g., "17:00")
-  isClosed   Boolean   @default(false)
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-
-  business   Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
-
-  @@unique([businessId, dayOfWeek])
-  @@map("working_hours")
-}
-
 model AvailabilityBlock {
   id         String   @id @default(cuid())
-  businessId String
+  userId     String
   date       DateTime @db.Date
   startTime  String   // HH:mm
   endTime    String   // HH:mm
   createdAt  DateTime @default(now())
   
-  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([businessId, date])
+  @@index([userId, date])
   @@map("availability_blocks")
-}
-
-model StaffSchedule {
-  id              String         @id @default(cuid())
-  memberId        String
-  date            DateTime       @db.Date   // Specific date override
-  startTime       String?        // HH:mm format, null = day off
-  endTime         String?        // HH:mm format
-  isAvailable     Boolean        @default(true)
-  note            String?
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-
-  member          BusinessMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
-
-  @@unique([memberId, date])
-  @@map("staff_schedules")
 }
 
 model Booking {
   id                    String        @id @default(cuid())
-  businessId            String
-  customerId            String
-  serviceId             String
-  staffId               String?       // Optional: assigned staff member
+  hostId                String
+  guestName             String
+  guestEmail            String
+  meetingName           String
+  duration              Int           // Duration in minutes
   date                  DateTime      @db.Date
   startTime             String        // HH:mm format
   endTime               String        // HH:mm format
   status                BookingStatus @default(PENDING)
-  paymentStatus         PaymentStatus @default(PENDING)
-  stripePaymentIntentId String?       @unique
   meetLink              String?
   googleEventId         String?
   notes                 String?
@@ -227,15 +80,9 @@ model Booking {
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
 
-  business      Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  customer      User           @relation("CustomerBookings", fields: [customerId], references: [id], onDelete: Cascade)
-  service       Service        @relation(fields: [serviceId], references: [id], onDelete: Cascade)
-  staff         BusinessMember? @relation("StaffBookings", fields: [staffId], references: [id], onDelete: SetNull)
-  notifications Notification[]
+  host          User           @relation("HostBookings", fields: [hostId], references: [id], onDelete: Cascade)
 
-  @@index([businessId, date])
-  @@index([customerId])
-  @@index([staffId])
+  @@index([hostId, date])
   @@map("bookings")
 }
 
@@ -252,22 +99,4 @@ model RefreshToken {
 
   @@index([userId])
   @@map("refresh_tokens")
-}
-
-model Notification {
-  id         String           @id @default(cuid())
-  userId     String
-  bookingId  String?
-  type       NotificationType @default(EMAIL)
-  subject    String
-  body       String
-  isRead     Boolean          @default(false)
-  sentAt     DateTime         @default(now())
-  readAt     DateTime?
-
-  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  booking    Booking?         @relation(fields: [bookingId], references: [id], onDelete: SetNull)
-
-  @@index([userId, isRead])
-  @@map("notifications")
 }

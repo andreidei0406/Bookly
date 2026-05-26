@@ -46,23 +46,41 @@ function excludePassword(user) {
  * @param {string} [params.phone]
  * @returns {Promise<{user: object, accessToken: string, refreshToken: string}>}
  */
-export async function register({ email, password, firstName, lastName, phone }) {
+export async function register({ email, password, firstName, lastName, phone, username }) {
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
     throw ApiError.conflict('A user with this email already exists');
+  }
+
+  // Generate a username if not provided
+  let uniqueUsername = username;
+  if (!uniqueUsername) {
+    const baseUsername = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+    uniqueUsername = baseUsername;
+    let counter = 1;
+    while (await prisma.user.findUnique({ where: { username: uniqueUsername } })) {
+      uniqueUsername = `${baseUsername}${counter}`;
+      counter++;
+    }
+  } else {
+    // Check if provided username is taken
+    const existingUsername = await prisma.user.findUnique({ where: { username: uniqueUsername } });
+    if (existingUsername) {
+      throw ApiError.conflict('This username is already taken');
+    }
   }
 
   const hashedPassword = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
   const user = await prisma.user.create({
     data: {
+      username: uniqueUsername,
       email,
       password: hashedPassword,
       firstName,
       lastName,
       phone: phone || null,
     },
-    include: { memberships: { include: { business: true } } }
   });
 
   const accessToken = generateAccessToken(user);
@@ -98,8 +116,7 @@ export async function register({ email, password, firstName, lastName, phone }) 
  */
 export async function login({ email, password }) {
   const user = await prisma.user.findUnique({ 
-    where: { email },
-    include: { memberships: { include: { business: true } } }
+    where: { email }
   });
   if (!user) {
     throw ApiError.unauthorized('Invalid email or password');
@@ -338,12 +355,21 @@ export async function googleLogin(googleData) {
           googleTokenExpiry: expiryDate,
           emailVerified: true,
         },
-        include: { memberships: { include: { business: true } } },
       });
     } else {
       // Create new user via Google
+      const baseUsername = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+      let uniqueUsername = baseUsername;
+      let counter = 1;
+      
+      while (await prisma.user.findUnique({ where: { username: uniqueUsername } })) {
+        uniqueUsername = `${baseUsername}${counter}`;
+        counter++;
+      }
+
       user = await prisma.user.create({
         data: {
+          username: uniqueUsername,
           email,
           firstName,
           lastName,
@@ -353,8 +379,8 @@ export async function googleLogin(googleData) {
           googleRefreshToken: refreshToken,
           googleTokenExpiry: expiryDate,
           emailVerified: true,
+          password: 'google_oauth_no_password_set'
         },
-        include: { memberships: { include: { business: true } } },
       });
       // Fire-and-forget welcome email
       sendWelcomeEmail(user);
@@ -368,7 +394,6 @@ export async function googleLogin(googleData) {
         googleRefreshToken: refreshToken || user.googleRefreshToken,
         googleTokenExpiry: expiryDate,
       },
-      include: { memberships: { include: { business: true } } },
     });
   }
 

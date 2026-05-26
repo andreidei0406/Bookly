@@ -141,10 +141,8 @@ export const googleCallback = catchAsync(async (req, res) => {
  * @route GET /api/v1/auth/me
  */
 export const getMe = catchAsync(async (req, res) => {
-  // Fetch fresh user data with memberships
   const user = await prisma.user.findUnique({
-    where: { id: req.user.id },
-    include: { memberships: { include: { business: true } } }
+    where: { id: req.user.id }
   });
   
   if (!user) {
@@ -169,8 +167,7 @@ export const disconnectGoogle = catchAsync(async (req, res) => {
       googleAccessToken: null,
       googleRefreshToken: null,
       googleTokenExpiry: null,
-    },
-    include: { memberships: { include: { business: true } } }
+    }
   });
   
   const { password, ...safeUser } = user;

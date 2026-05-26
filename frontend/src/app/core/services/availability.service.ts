@@ -3,12 +3,16 @@ import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { Observable, catchError, throwError } from 'rxjs';
 
-export interface WorkingHours {
+export interface AvailabilityBlock {
   id?: string;
-  dayOfWeek: string;
-  openTime: string;
-  closeTime: string;
-  isClosed: boolean;
+  date: string | Date;
+  startTime: string;
+  endTime: string;
+}
+
+export interface AvailableSlot {
+  startTime: string;
+  endTime: string;
 }
 
 @Injectable({
@@ -19,39 +23,38 @@ export class AvailabilityService {
   private apiUrl = `${environment.apiUrl}/v1`;
 
   /**
-   * Get working hours for a business.
+   * Get available booking slots for a public user profile.
    */
-  getWorkingHours(businessId: string): Observable<{ data: WorkingHours[] }> {
-    return this.http.get<{ data: WorkingHours[] }>(
-      `${this.apiUrl}/businesses/${businessId}/availability/working-hours`
+  getAvailableSlots(username: string, date: string, duration: number = 30): Observable<{ data: AvailableSlot[] }> {
+    return this.http.get<{ data: AvailableSlot[] }>(
+      `${this.apiUrl}/users/${username}/availability/slots?date=${date}&duration=${duration}`
     ).pipe(
       catchError(error => {
-        console.error('Error fetching working hours:', error);
+        console.error('Error fetching available slots:', error);
         return throwError(() => error);
       })
     );
   }
 
   /**
-   * Update working hours for a business.
+   * Get available days for a public user profile in a month.
    */
-  updateWorkingHours(businessId: string, hours: WorkingHours[]): Observable<{ data: WorkingHours[] }> {
-    return this.http.put<{ data: WorkingHours[] }>(
-      `${this.apiUrl}/businesses/${businessId}/availability/working-hours`,
-      { hours }
+  getAvailableDays(username: string, month: string): Observable<{ data: string[] }> {
+    return this.http.get<{ data: string[] }>(
+      `${this.apiUrl}/users/${username}/availability/days?month=${month}`
     ).pipe(
       catchError(error => {
-        console.error('Error updating working hours:', error);
+        console.error('Error fetching available days:', error);
         return throwError(() => error);
       })
     );
   }
 
   /**
-   * Get availability blocks for a business.
+   * Get availability blocks for the authenticated user.
    */
-  getBlocks(businessId: string, startDate?: string, endDate?: string): Observable<{ data: any[] }> {
-    let url = `${this.apiUrl}/businesses/${businessId}/availability/blocks`;
+  getBlocks(startDate?: string, endDate?: string): Observable<{ data: AvailabilityBlock[] }> {
+    let url = `${this.apiUrl}/availability/blocks`;
     const params = new URLSearchParams();
     if (startDate) params.append('startDate', startDate);
     if (endDate) params.append('endDate', endDate);
@@ -59,25 +62,25 @@ export class AvailabilityService {
     if (queryString) {
       url += `?${queryString}`;
     }
-    return this.http.get<{ data: any[] }>(url, { withCredentials: true });
+    return this.http.get<{ data: AvailabilityBlock[] }>(url, { withCredentials: true });
   }
 
   /**
-   * Create an availability block.
+   * Create an availability block for the authenticated user.
    */
-  createBlock(businessId: string, data: { date: string, startTime: string, endTime: string }): Observable<{ data: any }> {
-    return this.http.post<{ data: any }>(
-      `${this.apiUrl}/businesses/${businessId}/availability/blocks`,
+  createBlock(data: { date: string, startTime: string, endTime: string }): Observable<{ data: AvailabilityBlock }> {
+    return this.http.post<{ data: AvailabilityBlock }>(
+      `${this.apiUrl}/availability/blocks`,
       data,
       { withCredentials: true }
     );
   }
 
   /**
-   * Clear availability blocks for a business.
+   * Clear availability blocks for the authenticated user.
    */
-  clearBlocks(businessId: string, startDate?: string, endDate?: string): Observable<{ data: any }> {
-    let url = `${this.apiUrl}/businesses/${businessId}/availability/blocks/clear`;
+  clearBlocks(startDate?: string, endDate?: string): Observable<{ data: any }> {
+    let url = `${this.apiUrl}/availability/blocks/clear`;
     const params = new URLSearchParams();
     if (startDate) params.append('startDate', startDate);
     if (endDate) params.append('endDate', endDate);
@@ -91,9 +94,9 @@ export class AvailabilityService {
   /**
    * Update an availability block.
    */
-  updateBlock(businessId: string, blockId: string, data: { date: string, startTime: string, endTime: string }): Observable<{ data: any }> {
-    return this.http.put<{ data: any }>(
-      `${this.apiUrl}/businesses/${businessId}/availability/blocks/${blockId}`,
+  updateBlock(blockId: string, data: { date: string, startTime: string, endTime: string }): Observable<{ data: AvailabilityBlock }> {
+    return this.http.put<{ data: AvailabilityBlock }>(
+      `${this.apiUrl}/availability/blocks/${blockId}`,
       data,
       { withCredentials: true }
     );
@@ -102,9 +105,9 @@ export class AvailabilityService {
   /**
    * Delete an availability block.
    */
-  deleteBlock(businessId: string, blockId: string): Observable<void> {
+  deleteBlock(blockId: string): Observable<void> {
     return this.http.delete<void>(
-      `${this.apiUrl}/businesses/${businessId}/availability/blocks/${blockId}`,
+      `${this.apiUrl}/availability/blocks/${blockId}`,
       { withCredentials: true }
     );
   }

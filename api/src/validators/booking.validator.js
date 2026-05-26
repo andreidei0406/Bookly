@@ -16,26 +16,22 @@ const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
 const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
 
 /**
- * Schema for creating a new booking.
+ * Schema for creating a new booking (authenticated host).
  * @type {{ body: z.ZodObject }}
  */
 export const createBookingSchema = {
   body: z.object({
-    businessId: z.string({ required_error: 'Business ID is required' }),
-    serviceId: z.string({ required_error: 'Service ID is required' }),
-    staffId: z
-      .string()
-      .optional(),
+    guestName: z.string({ required_error: 'Guest name is required' }).trim(),
+    guestEmail: z.string({ required_error: 'Guest email is required' }).email(),
+    meetingName: z.string({ required_error: 'Meeting name is required' }).trim(),
+    duration: z.number().int().positive(),
     date: z
       .string({ required_error: 'Date is required' })
       .regex(dateRegex, 'Date must be in YYYY-MM-DD format'),
     startTime: z
       .string({ required_error: 'Start time is required' })
       .regex(timeRegex, 'Start time must be in HH:mm format (24-hour)'),
-    notes: z
-      .string()
-      .trim()
-      .optional(),
+    notes: z.string().trim().optional(),
   }),
 };
 
@@ -45,21 +41,18 @@ export const createBookingSchema = {
  */
 export const publicCreateBookingSchema = {
   body: z.object({
-    businessId: z.string({ required_error: 'Business ID is required' }),
-    serviceId: z.string({ required_error: 'Service ID is required' }),
+    hostUsername: z.string({ required_error: 'Host username is required' }),
     guestName: z.string({ required_error: 'Guest name is required' }).trim(),
     guestEmail: z.string({ required_error: 'Guest email is required' }).email('Invalid email address'),
-    staffId: z.string().optional(),
+    meetingName: z.string({ required_error: 'Meeting name is required' }).trim(),
+    duration: z.number().int().positive(),
     date: z
       .string({ required_error: 'Date is required' })
       .regex(dateRegex, 'Date must be in YYYY-MM-DD format'),
     startTime: z
       .string({ required_error: 'Start time is required' })
       .regex(timeRegex, 'Start time must be in HH:mm format (24-hour)'),
-    notes: z
-      .string()
-      .trim()
-      .optional(),
+    notes: z.string().trim().optional(),
   }),
 };
 
@@ -74,10 +67,7 @@ export const updateBookingStatusSchema = {
       invalid_type_error:
         'Status must be one of: CONFIRMED, CANCELLED, COMPLETED, NO_SHOW',
     }),
-    cancelReason: z
-      .string()
-      .trim()
-      .optional(),
+    cancelReason: z.string().trim().optional(),
   }),
 };
 

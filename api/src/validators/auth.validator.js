@@ -32,6 +32,13 @@ export const registerSchema = {
       .trim()
       .toLowerCase(),
     password: passwordSchema,
+    username: z
+      .string()
+      .min(3, 'Username must be at least 3 characters')
+      .max(30, 'Username must be at most 30 characters')
+      .regex(/^[a-zA-Z0-9_.-]+$/, 'Username can only contain letters, numbers, underscores, dots, and hyphens')
+      .trim()
+      .optional(),
     firstName: z
       .string({ required_error: 'First name is required' })
       .min(1, 'First name is required')

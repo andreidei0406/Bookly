@@ -4,6 +4,15 @@ import * as userService from '../services/user.service.js';
 import { parsePagination } from '../utils/pagination.js';
 
 /**
+ * Get a user's public profile (for booking page).
+ * @route GET /api/v1/users/:username
+ */
+export const getPublicProfile = catchAsync(async (req, res) => {
+  const result = await userService.getPublicProfile(req.params.username);
+  return success(res, { data: result });
+});
+
+/**
  * Get the authenticated user's profile.
  * @route GET /api/v1/users/me
  */

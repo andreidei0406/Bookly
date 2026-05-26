@@ -122,24 +122,25 @@ export async function sendWelcomeEmail(user) {
 
 /**
  * Send a booking confirmation email.
- * @param {object} booking - The booking with populated relations.
+ * @param {object} booking - The booking.
  */
 export async function sendBookingConfirmation(booking) {
-  const customerEmail = booking.customer?.email;
+  const customerEmail = booking.guestEmail;
   if (!customerEmail) {return;}
 
   await sendEmail({
     to: customerEmail,
-    subject: 'Your Booking is Confirmed - Bookly',
+    subject: `Booking Confirmed: ${booking.meetingName} - Bookly`,
     template: 'booking-confirmation',
     context: {
-      firstName: booking.customer.firstName,
-      serviceName: booking.service?.name,
-      businessName: booking.business?.name,
+      firstName: booking.guestName,
+      serviceName: booking.meetingName,
+      businessName: booking.host?.firstName ? `${booking.host.firstName} ${booking.host.lastName}` : 'Your Host',
       date: booking.date instanceof Date ? booking.date.toLocaleDateString() : booking.date,
       startTime: booking.startTime,
       endTime: booking.endTime,
       status: booking.status,
+      meetLink: booking.meetLink,
       year: new Date().getFullYear(),
     },
   });
@@ -150,17 +151,17 @@ export async function sendBookingConfirmation(booking) {
  * @param {object} booking - The booking with populated relations.
  */
 export async function sendBookingCancellation(booking) {
-  const customerEmail = booking.customer?.email;
+  const customerEmail = booking.guestEmail;
   if (!customerEmail) {return;}
 
   await sendEmail({
     to: customerEmail,
-    subject: 'Your Booking Has Been Cancelled - Bookly',
+    subject: `Booking Cancelled: ${booking.meetingName} - Bookly`,
     template: 'booking-cancellation',
     context: {
-      firstName: booking.customer.firstName,
-      serviceName: booking.service?.name,
-      businessName: booking.business?.name,
+      firstName: booking.guestName,
+      serviceName: booking.meetingName,
+      businessName: booking.host?.firstName ? `${booking.host.firstName} ${booking.host.lastName}` : 'Your Host',
       date: booking.date instanceof Date ? booking.date.toLocaleDateString() : booking.date,
       startTime: booking.startTime,
       endTime: booking.endTime,

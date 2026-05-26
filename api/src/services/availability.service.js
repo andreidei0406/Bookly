@@ -1,6 +1,6 @@
 /**
  * @module services/availability
- * @description Availability management service — working hours CRUD and
+ * @description Availability management service — blocks CRUD and
  * the core slot availability algorithm.
  */
 
@@ -8,17 +8,6 @@ import prisma from '../utils/prisma.js';
 import logger from '../config/logger.js';
 import ApiError from '../utils/apiError.js';
 import { fetchCalendarEvents } from './google.service.js';
-
-/** Map JS Date.getDay() (0=Sun) to day-of-week names used in the schema. */
-const DAY_NAMES = [
-  'SUNDAY',
-  'MONDAY',
-  'TUESDAY',
-  'WEDNESDAY',
-  'THURSDAY',
-  'FRIDAY',
-  'SATURDAY',
-];
 
 /**
  * Parse a time string (HH:mm) into total minutes from midnight.
@@ -41,82 +30,10 @@ function minutesToTime(minutes) {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
 
-/**
- * Get all working hours for a business.
- * @param {string} businessId - The business ID.
- * @returns {Promise<object[]>} Array of WorkingHours records.
- */
-export async function getWorkingHours(businessId) {
-  const business = await prisma.business.findUnique({
-    where: { id: businessId },
-  });
-
-  if (!business) {
-    throw ApiError.notFound('Business not found');
-  }
-
-  const workingHours = await prisma.workingHours.findMany({
-    where: { businessId },
-    orderBy: { dayOfWeek: 'asc' },
-  });
-
-  return workingHours;
-}
-
-/**
- * Set working hours for a business. Replaces all existing entries in a transaction.
- * @param {string} businessId - The business ID.
- * @param {object[]} hours - Array of working hour entries.
- * @param {string} hours[].dayOfWeek - Day of the week (MONDAY, TUESDAY, etc.).
- * @param {string} hours[].openTime - Opening time (HH:mm).
- * @param {string} hours[].closeTime - Closing time (HH:mm).
- * @param {boolean} [hours[].isClosed=false] - Whether the business is closed on this day.
- * @returns {Promise<object[]>} The newly created working hours.
- */
-export async function setWorkingHours(businessId, hours) {
-  const business = await prisma.business.findUnique({
-    where: { id: businessId },
-  });
-
-  if (!business) {
-    throw ApiError.notFound('Business not found');
-  }
-
-  const result = await prisma.$transaction(async (tx) => {
-    // Delete all existing working hours for this business
-    await tx.workingHours.deleteMany({
-      where: { businessId },
-    });
-
-    // Create new working hours entries
-    if (hours.length > 0) {
-      await tx.workingHours.createMany({
-        data: hours.map((entry) => ({
-          businessId,
-          dayOfWeek: entry.dayOfWeek,
-          openTime: entry.openTime,
-          closeTime: entry.closeTime,
-          isClosed: entry.isClosed || false,
-        })),
-      });
-    }
-
-    // Fetch and return the newly created records
-    return tx.workingHours.findMany({
-      where: { businessId },
-      orderBy: { dayOfWeek: 'asc' },
-    });
-  });
-
-  logger.info(`Working hours set for business ${businessId}: ${hours.length} entries`);
-
-  return result;
-}
-
-export async function getBlocks(businessId, query) {
+export async function getBlocks(userId, query) {
   const { startDate, endDate } = query;
   
-  const where = { businessId };
+  const where = { userId };
   if (startDate && endDate) {
     where.date = {
       gte: new Date(startDate),
@@ -130,7 +47,7 @@ export async function getBlocks(businessId, query) {
   });
 }
 
-export async function createBlock(businessId, data) {
+export async function createBlock(userId, data) {
   const date = new Date(data.date);
   date.setUTCHours(0, 0, 0, 0);
 
@@ -141,7 +58,7 @@ export async function createBlock(businessId, data) {
     // 1. Fetch existing blocks for this date
     const existingBlocks = await tx.availabilityBlock.findMany({
       where: {
-        businessId,
+        userId,
         date
       }
     });
@@ -179,7 +96,7 @@ export async function createBlock(businessId, data) {
     // 5. Create merged block
     return tx.availabilityBlock.create({
       data: {
-        businessId,
+        userId,
         date,
         startTime: minutesToTime(mergedStart),
         endTime: minutesToTime(mergedEnd)
@@ -188,13 +105,13 @@ export async function createBlock(businessId, data) {
   });
 }
 
-export async function clearBlocks(businessId, query) {
+export async function clearBlocks(userId, query) {
   const { startDate, endDate } = query;
-  const where = { businessId };
+  const where = { userId };
   if (startDate && endDate) {
     where.date = {
       gte: new Date(startDate),
-      lte: new Date(endDate)
+      lt: new Date(endDate)
     };
   }
   
@@ -202,18 +119,18 @@ export async function clearBlocks(businessId, query) {
   return { deletedCount: result.count };
 }
 
-export async function deleteBlock(businessId, blockId) {
+export async function deleteBlock(userId, blockId) {
   return prisma.availabilityBlock.delete({
-    where: { id: blockId, businessId }
+    where: { id: blockId, userId }
   });
 }
 
-export async function updateBlock(businessId, blockId, data) {
+export async function updateBlock(userId, blockId, data) {
   const date = new Date(data.date);
   date.setUTCHours(0, 0, 0, 0);
 
   return prisma.availabilityBlock.update({
-    where: { id: blockId, businessId },
+    where: { id: blockId, userId },
     data: {
       date,
       startTime: data.startTime,
@@ -223,37 +140,34 @@ export async function updateBlock(businessId, blockId, data) {
 }
 
 /**
- * Get available booking time slots for a business on a given date.
+ * Get available booking time slots for a user on a given date.
  *
  * Algorithm:
- * 1. Look up the requested service to determine duration.
- * 2. Determine the day of week from the date.
- * 3. Retrieve working hours for that day — return empty if closed.
- * 4. Fetch existing confirmed/pending bookings for that date.
+ * 1. Determine duration from query (default 30 mins).
+ * 2. Get AvailabilityBlocks for that day.
+ * 3. Fetch existing confirmed/pending bookings for that date.
+ * 4. Fetch Google Calendar events.
  * 5. Generate candidate slots from open to close at service-duration intervals.
- * 6. Filter out slots that overlap with existing bookings.
+ * 6. Filter out slots that overlap with existing bookings or Google events.
  *
- * @param {string} businessId - The business ID.
+ * @param {string} username - The host's username.
  * @param {object} params
  * @param {string} params.date - The target date (YYYY-MM-DD).
- * @param {string} params.serviceId - The service ID (for duration).
+ * @param {string} params.duration - Duration in minutes.
  * @returns {Promise<{startTime: string, endTime: string}[]>} Available slots.
  */
-export async function getAvailableSlots(businessId, { date, serviceId }) {
-  // 1. Get the service to know the duration
-  const service = await prisma.service.findUnique({
-    where: { id: serviceId },
+export async function getAvailableSlots(username, { date, duration }) {
+  const durationMinutes = parseInt(duration) || 30;
+
+  const hostUser = await prisma.user.findUnique({
+    where: { username }
   });
 
-  if (!service) {
-    throw ApiError.notFound('Service not found');
+  if (!hostUser) {
+    throw ApiError.notFound('Host user not found');
   }
 
-  if (service.businessId !== businessId) {
-    throw ApiError.badRequest('Service does not belong to this business');
-  }
-
-  const durationMinutes = service.duration; // duration in minutes
+  const userId = hostUser.id;
 
   // 2. Get AvailabilityBlocks for that day
   const targetDate = new Date(date);
@@ -261,7 +175,7 @@ export async function getAvailableSlots(businessId, { date, serviceId }) {
 
   const blocks = await prisma.availabilityBlock.findMany({
     where: {
-      businessId,
+      userId,
       date: targetDate,
     },
   });
@@ -279,7 +193,7 @@ export async function getAvailableSlots(businessId, { date, serviceId }) {
 
   const existingBookings = await prisma.booking.findMany({
     where: {
-      businessId,
+      hostId: userId,
       date: {
         gte: dayStart,
         lte: dayEnd,
@@ -301,24 +215,26 @@ export async function getAvailableSlots(businessId, { date, serviceId }) {
   }));
 
   // 4. Fetch Google Calendar Events to subtract as busy time
-  const ownerMember = await prisma.businessMember.findFirst({
-    where: { businessId, role: 'OWNER' },
-    include: { user: true }
-  });
-
-  if (ownerMember && ownerMember.user) {
-    const googleEvents = await fetchCalendarEvents(ownerMember.user, dayStart.toISOString(), dayEnd.toISOString());
-    for (const event of googleEvents) {
-      if (!event.start || !event.end) {
-        continue;
-      }
-      const startDt = new Date(event.start);
-      const endDt = new Date(event.end);
-      // convert to minutes
-      const startMins = startDt.getHours() * 60 + startDt.getMinutes();
-      const endMins = endDt.getHours() * 60 + endDt.getMinutes();
-      bookedSlots.push({ start: startMins, end: endMins });
+  const googleEvents = await fetchCalendarEvents(hostUser, dayStart.toISOString(), dayEnd.toISOString());
+  for (const event of googleEvents) {
+    if (!event.start || !event.end) {
+      continue;
     }
+    // event.start is either an ISO string (e.g. 2025-05-25T10:00:00-04:00) or a date string (2025-05-25)
+    let startMins, endMins;
+    
+    if (event.start.includes('T')) {
+      // Parse the time part directly from the ISO string to keep it local to the event's timezone
+      const timePartStart = event.start.split('T')[1].substring(0, 5);
+      const timePartEnd = event.end.split('T')[1].substring(0, 5);
+      startMins = timeToMinutes(timePartStart);
+      endMins = timeToMinutes(timePartEnd);
+    } else {
+      // All day event -> block entire day
+      startMins = 0;
+      endMins = 1440;
+    }
+    bookedSlots.push({ start: startMins, end: endMins });
   }
 
   // 5. Generate candidate time slots from all availability blocks
@@ -349,4 +265,45 @@ export async function getAvailableSlots(businessId, { date, serviceId }) {
   availableSlots.sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime));
 
   return availableSlots;
+}
+
+/**
+ * Get a list of dates that have availability blocks for a user.
+ * @param {string} username 
+ * @param {string} month - YYYY-MM
+ * @returns {Promise<string[]>} Array of YYYY-MM-DD strings
+ */
+export async function getAvailableDays(username, month) {
+  const hostUser = await prisma.user.findUnique({
+    where: { username }
+  });
+
+  if (!hostUser) {
+    throw ApiError.notFound('Host user not found');
+  }
+
+  const startDate = new Date(`${month}-01T00:00:00.000Z`);
+  const endDate = new Date(startDate);
+  endDate.setUTCMonth(endDate.getUTCMonth() + 1);
+
+  const blocks = await prisma.availabilityBlock.findMany({
+    where: {
+      userId: hostUser.id,
+      date: {
+        gte: startDate,
+        lt: endDate
+      }
+    },
+    select: {
+      date: true
+    }
+  });
+
+  // Extract unique dates
+  const dates = new Set();
+  for (const b of blocks) {
+    dates.add(b.date.toISOString().split('T')[0]);
+  }
+
+  return Array.from(dates);
 }

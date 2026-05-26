@@ -7,11 +7,11 @@ import { throwError } from 'rxjs';
 export interface User {
   id: string;
   email: string;
+  username: string;
   firstName: string;
   lastName: string;
   platformRole: string;
   googleId?: string;
-  memberships?: any[];
 }
 
 @Injectable({
@@ -93,5 +93,9 @@ export class AuthService {
 
   disconnectGoogle() {
     return this.http.delete<{data: User}>(`${this.API_URL}/google`, { withCredentials: true });
+  }
+
+  getPublicProfile(username: string) {
+    return this.http.get<{data: User}>(`http://localhost:3000/api/v1/users/${username}`);
   }
 }

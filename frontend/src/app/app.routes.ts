@@ -27,7 +27,7 @@ export const routes: Routes = [
     canActivate: [authGuard]
   },
   {
-    path: 'booking/:businessSlug',
+    path: 'booking/:username',
     loadComponent: () => import('./features/booking/booking-page/booking-page.component').then(m => m.BookingPageComponent)
   },
   {

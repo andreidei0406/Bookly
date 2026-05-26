@@ -52,8 +52,13 @@ const validate = (schema) => (req, res, next) => {
           throw ApiError.badRequest(`Validation failed: ${message}`, errors);
         }
 
-        // Replace with parsed/coerced values
-        req[source] = result.data;
+        // Replace with parsed/coerced values. Use Object.defineProperty to override Express 5 getters (like req.query)
+        Object.defineProperty(req, source, {
+          value: result.data,
+          writable: true,
+          enumerable: true,
+          configurable: true
+        });
       }
     }
 

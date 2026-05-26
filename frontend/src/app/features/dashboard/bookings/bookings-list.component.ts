@@ -60,25 +60,26 @@ import { AuthService } from '../../../core/services/auth.service';
                   <svg class="h-4 w-4 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                   <span class="font-medium">{{ booking.startTime }} - {{ booking.endTime }}</span>
                 </div>
-
-              <span class="font-medium truncate text-sm">
-                <ng-container *ngIf="booking['customer'] as customer">
-                  <span>{{ customer['firstName'] }} {{ customer['lastName'] }}</span>
-                </ng-container>
-              </span>
+                
+                <div class="mt-4 mb-2">
+                  <span class="block font-medium text-lg">{{ booking.meetingName || 'Meeting' }}</span>
+                  <span class="block text-sm text-muted-foreground mt-1">{{ booking.duration || 30 }} min</span>
+                </div>
+              
+              <div class="font-medium mt-1 truncate text-sm">
+                  <span>{{ booking.guestName }}</span>
+              </div>
               <div class="flex items-center gap-2 mt-1">
                 <svg class="w-4 h-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
-                <ng-container *ngIf="booking['customer'] as customer">
-                  <a href="mailto:{{ customer['email'] }}" class="text-blue-600 hover:underline">{{ customer['email'] }}</a>
-                </ng-container>
+                  <a href="mailto:{{ booking.guestEmail }}" class="text-blue-600 hover:underline">{{ booking.guestEmail }}</a>
               </div>
-              <div *ngIf="booking['notes']" class="flex items-start gap-2 mt-2 bg-muted/50 p-2 rounded-md">
+              <div *ngIf="booking.notes" class="flex items-start gap-2 mt-2 bg-muted/50 p-2 rounded-md">
                 <svg class="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" />
                 </svg>
-                <span class="text-sm text-muted-foreground">{{ booking['notes'] }}</span>
+                <span class="text-sm text-muted-foreground">{{ booking.notes }}</span>
                 </div>
 
                 <div *ngIf="booking.meetLink" class="mt-2">

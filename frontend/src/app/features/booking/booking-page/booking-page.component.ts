@@ -2,8 +2,9 @@ import { Component, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
-import { BusinessService, BusinessDetails, ServiceType } from '../../../core/services/business.service';
-import { BookingService, AvailableSlot } from '../../../core/services/booking.service';
+import { AuthService, User } from '../../../core/services/auth.service';
+import { AvailabilityService, AvailableSlot } from '../../../core/services/availability.service';
+import { BookingService } from '../../../core/services/booking.service';
 
 type BookingStep = 'select-time' | 'enter-details' | 'confirmed';
 
@@ -22,20 +23,24 @@ interface TimeSlot {
 export class BookingPageComponent {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
-  private businessService = inject(BusinessService);
+  private authService = inject(AuthService);
+  private availabilityService = inject(AvailabilityService);
   private bookingService = inject(BookingService);
 
-  business = signal<BusinessDetails | null>(null);
-  selectedService = signal<ServiceType | null>(null);
-  meetingNameFromUrl = signal('');
+  host = signal<User | null>(null);
+  
+  username = signal('');
+  meetingNameFromUrl = signal('Meeting');
+  durationFromUrl = signal(30);
 
-  hostName = computed(() => this.business()?.name || 'Loading...');
-  meetingTypeName = computed(() => {
-    const fromUrl = this.meetingNameFromUrl();
-    if (fromUrl) return fromUrl;
-    return this.selectedService()?.name || 'Meeting';
+  hostName = computed(() => {
+    const h = this.host();
+    if (!h) return 'Loading...';
+    return `${h.firstName} ${h.lastName}`;
   });
-  duration = computed(() => this.selectedService()?.duration || 30);
+  
+  meetingTypeName = computed(() => this.meetingNameFromUrl());
+  duration = computed(() => this.durationFromUrl());
   timezone = signal(Intl.DateTimeFormat().resolvedOptions().timeZone);
 
   // State
@@ -51,6 +56,9 @@ export class BookingPageComponent {
   guestEmail = signal('');
   notes = signal('');
   isSubmitting = signal(false);
+
+  // Available days fetched from backend (YYYY-MM-DD)
+  availableDays = signal<Set<string>>(new Set());
 
   // Generate calendar days for the current month view
   calendarDays = computed(() => {
@@ -70,11 +78,16 @@ export class BookingPageComponent {
     for (let i = 1; i <= lastDay.getDate(); i++) {
       const date = new Date(year, month, i);
       const isPast = date < today;
-      // Mock availability: assume Mon-Fri are available
-      const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+      
+      const offset = date.getTimezoneOffset();
+      const validDate = new Date(date.getTime() - (offset*60*1000));
+      const dateStr = validDate.toISOString().split('T')[0];
+      
+      const hasAvailability = this.availableDays().has(dateStr);
+
       days.push({ 
         date, 
-        isSelectable: !isPast && !isWeekend 
+        isSelectable: !isPast && hasAvailability 
       });
     }
     return days;
@@ -84,54 +97,79 @@ export class BookingPageComponent {
   availableSlots = signal<TimeSlot[]>([]);
 
   constructor() {
-    // Get slug from route
-    const slug = this.route.snapshot.paramMap.get('businessSlug');
+    // Get username from route
+    const usernameParam = this.route.snapshot.paramMap.get('username');
+    if (usernameParam) {
+      this.username.set(usernameParam);
+    }
     
-    // Read meeting name from query params
+    // Read meeting name and duration from query params
     const meetingParam = this.route.snapshot.queryParamMap.get('meeting');
     if (meetingParam) {
       this.meetingNameFromUrl.set(decodeURIComponent(meetingParam));
     }
+    const durationParam = this.route.snapshot.queryParamMap.get('duration');
+    if (durationParam) {
+      const parsed = parseInt(durationParam, 10);
+      if (!isNaN(parsed) && parsed > 0) {
+        this.durationFromUrl.set(parsed);
+      }
+    }
 
-    if (slug) {
-      this.businessService.getBusinessBySlug(slug).subscribe({
+    if (this.username()) {
+      this.authService.getPublicProfile(this.username()).subscribe({
         next: (res) => {
-          this.business.set(res.data);
-          if (res.data.services.length > 0) {
-            this.selectedService.set(res.data.services[0]); // default to first service
-          }
+          this.host.set(res.data);
+          this.fetchAvailableDaysForMonth(this.currentMonth());
         },
         error: (err) => {
-          console.error('Business not found', err);
+          console.error('Host not found', err);
           this.router.navigate(['/']);
         }
       });
     }
   }
 
+  fetchAvailableDaysForMonth(date: Date) {
+    if (!this.username()) return;
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const monthStr = `${year}-${month}`;
+    
+    this.availabilityService.getAvailableDays(this.username(), monthStr).subscribe({
+      next: (res) => {
+        this.availableDays.set(new Set(res.data));
+      },
+      error: (err) => {
+        console.error('Failed to fetch available days', err);
+        this.availableDays.set(new Set());
+      }
+    });
+  }
+
   previousMonth() {
     const newMonth = new Date(this.currentMonth());
     newMonth.setMonth(newMonth.getMonth() - 1);
     this.currentMonth.set(newMonth);
+    this.fetchAvailableDaysForMonth(this.currentMonth());
   }
 
   nextMonth() {
     const newMonth = new Date(this.currentMonth());
     newMonth.setMonth(newMonth.getMonth() + 1);
     this.currentMonth.set(newMonth);
+    this.fetchAvailableDaysForMonth(this.currentMonth());
   }
 
   fetchAvailableSlots(date: Date) {
-    const businessId = this.business()?.id;
-    const serviceId = this.selectedService()?.id;
-    if (!businessId || !serviceId) return;
+    if (!this.username()) return;
 
     // Format date to YYYY-MM-DD correctly using local timezone
     const offset = date.getTimezoneOffset()
     const validDate = new Date(date.getTime() - (offset*60*1000))
     const dateStr = validDate.toISOString().split('T')[0];
 
-    this.bookingService.getAvailableSlots(businessId, serviceId, dateStr).subscribe({
+    this.availabilityService.getAvailableSlots(this.username(), dateStr, this.duration()).subscribe({
       next: (res) => {
         const slots: TimeSlot[] = res.data.map(slot => {
           const start = new Date(`${dateStr}T${slot.startTime}:00`);
@@ -169,11 +207,10 @@ export class BookingPageComponent {
   }
 
   async submitBooking() {
-    const businessId = this.business()?.id;
-    const serviceId = this.selectedService()?.id;
     const slot = this.selectedSlot();
+    const hostUser = this.username();
 
-    if (!this.guestName() || !this.guestEmail() || !slot || !businessId || !serviceId) return;
+    if (!this.guestName() || !this.guestEmail() || !slot || !hostUser) return;
     
     this.isSubmitting.set(true);
 
@@ -185,10 +222,11 @@ export class BookingPageComponent {
     const startTimeStr = pad(slot.start.getHours()) + ':' + pad(slot.start.getMinutes());
 
     const payload = {
-      businessId,
-      serviceId,
+      hostUsername: hostUser,
       guestName: this.guestName(),
       guestEmail: this.guestEmail(),
+      meetingName: this.meetingTypeName(),
+      duration: this.duration(),
       date: dateStr,
       startTime: startTimeStr,
       notes: this.notes()
@@ -197,11 +235,7 @@ export class BookingPageComponent {
     this.bookingService.publicCreateBooking(payload).subscribe({
       next: (res) => {
         this.isSubmitting.set(false);
-        if ((res.data as any)['checkoutUrl']) {
-          window.location.href = (res.data as any)['checkoutUrl'];
-        } else {
-          this.step.set('confirmed');
-        }
+        this.step.set('confirmed');
       },
       error: (err) => {
         this.isSubmitting.set(false);
