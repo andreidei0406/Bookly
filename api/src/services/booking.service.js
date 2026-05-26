@@ -73,7 +73,7 @@ async function isSlotAvailable(hostId, date, startTime, endTime, excludeBookingI
 /**
  * Create a new booking as a guest (Public).
  */
-export async function publicCreate({ hostUsername, guestName, guestEmail, meetingName, duration, date, startTime, notes }) {
+export async function publicCreate({ hostUsername, guestName, guestEmail, meetingName, duration, date, startTime, notes, timezone }) {
   const host = await prisma.user.findUnique({
     where: { username: hostUsername },
   });
@@ -120,6 +120,8 @@ export async function publicCreate({ hostUsername, guestName, guestEmail, meetin
   if (host.googleAccessToken) {
     // Pass a dummy service to createCalendarEventWithMeet to keep signature
     const dummyService = { name: meetingName, duration };
+    // Pass timezone in booking object
+    booking.timezone = timezone;
     const calendarData = await createCalendarEventWithMeet(host, booking, dummyService);
     
     if (calendarData) {
@@ -177,7 +179,7 @@ export async function findAll(hostId, { page = 1, limit = 20, status } = {}) {
           select: { id: true, email: true, firstName: true, lastName: true },
         },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
     }),
     prisma.booking.count({ where }),
   ]);

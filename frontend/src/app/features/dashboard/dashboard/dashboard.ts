@@ -15,6 +15,7 @@ import { BookingsListComponent } from '../bookings/bookings-list.component';
 import { environment } from '../../../../environments/environment';
 import { forkJoin, zip, from, firstValueFrom } from 'rxjs';
 import { concatMap, toArray, catchError } from 'rxjs/operators';
+import { ActivatedRoute, Router } from '@angular/router';
 
 type DashboardTab = 'calendar' | 'bookings' | 'profile';
 
@@ -32,6 +33,8 @@ export class Dashboard implements OnInit {
   private availabilityService = inject(AvailabilityService);
   private integrationService = inject(IntegrationService);
   private bookingService = inject(BookingService);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
 
   activeView = signal<DashboardTab>('calendar');
   currentDate = signal(new Date());
@@ -92,7 +95,11 @@ export class Dashboard implements OnInit {
   };
 
   ngOnInit() {
-    // Session is already fetched by app initializer, signal has data
+    // Read initial tab from route data
+    const tab = this.route.snapshot.data['tab'] as DashboardTab;
+    if (tab) {
+      this.activeView.set(tab);
+    }
   }
 
   fetchEvents(info: any, successCallback: Function, failureCallback: Function) {
@@ -393,6 +400,15 @@ export class Dashboard implements OnInit {
   setView(view: DashboardTab) {
     this.activeView.set(view);
     this.showProfileDropdown.set(false);
+
+    // Navigate to the matching route
+    const routeMap: Record<DashboardTab, string> = {
+      calendar: '/dashboard/calendar',
+      bookings: '/dashboard/bookings',
+      profile: '/dashboard/settings',
+    };
+    this.router.navigate([routeMap[view]], { replaceUrl: true });
+
     if (view === 'calendar' && this.calendarComponent) {
       setTimeout(() => {
         this.calendarComponent.getApi().render();

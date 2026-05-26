@@ -45,24 +45,18 @@ export async function createCalendarEventWithMeet(user, booking, service) {
 
     const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
 
-    // Calculate dates
-    const [startH, startM] = booking.startTime.split(':');
-    const [endH, endM] = booking.endTime.split(':');
-    
-    const startDateTime = new Date(booking.date);
-    startDateTime.setHours(Number(startH), Number(startM), 0, 0);
-
-    const endDateTime = new Date(booking.date);
-    endDateTime.setHours(Number(endH), Number(endM), 0, 0);
+    const dateStr = booking.date.toISOString().split('T')[0]; // "YYYY-MM-DD"
 
     const event = {
       summary: `Booking: ${service.name}`,
       description: `Appointment with ${user.firstName} ${user.lastName}\nNotes: ${booking.notes || 'None'}`,
       start: {
-        dateTime: startDateTime.toISOString(),
+        dateTime: `${dateStr}T${booking.startTime}:00`,
+        timeZone: booking.timezone || 'UTC',
       },
       end: {
-        dateTime: endDateTime.toISOString(),
+        dateTime: `${dateStr}T${booking.endTime}:00`,
+        timeZone: booking.timezone || 'UTC',
       },
       conferenceData: {
         createRequest: {
@@ -71,7 +65,7 @@ export async function createCalendarEventWithMeet(user, booking, service) {
         },
       },
       attendees: [
-        { email: booking.customer?.email },
+        { email: booking.guestEmail },
       ],
     };
 

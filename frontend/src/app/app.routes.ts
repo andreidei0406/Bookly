@@ -23,8 +23,26 @@ export const routes: Routes = [
   },
   {
     path: 'dashboard',
+    redirectTo: 'dashboard/calendar',
+    pathMatch: 'full'
+  },
+  {
+    path: 'dashboard/calendar',
     loadComponent: () => import('./features/dashboard/dashboard/dashboard').then(m => m.Dashboard),
-    canActivate: [authGuard]
+    canActivate: [authGuard],
+    data: { tab: 'calendar' }
+  },
+  {
+    path: 'dashboard/bookings',
+    loadComponent: () => import('./features/dashboard/dashboard/dashboard').then(m => m.Dashboard),
+    canActivate: [authGuard],
+    data: { tab: 'bookings' }
+  },
+  {
+    path: 'dashboard/settings',
+    loadComponent: () => import('./features/dashboard/dashboard/dashboard').then(m => m.Dashboard),
+    canActivate: [authGuard],
+    data: { tab: 'profile' }
   },
   {
     path: 'booking/:username',

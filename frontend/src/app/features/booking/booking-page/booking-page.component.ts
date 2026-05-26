@@ -96,6 +96,21 @@ export class BookingPageComponent {
   // Fetched from backend
   availableSlots = signal<TimeSlot[]>([]);
 
+  // Pagination for slots
+  slotsCurrentPage = signal(1);
+  slotsPerPage = 6;
+  
+  paginatedSlots = computed(() => {
+    const slots = this.availableSlots();
+    const start = (this.slotsCurrentPage() - 1) * this.slotsPerPage;
+    return slots.slice(start, start + this.slotsPerPage);
+  });
+  
+  slotsTotalPages = computed(() => {
+    const total = this.availableSlots().length;
+    return total === 0 ? 1 : Math.ceil(total / this.slotsPerPage);
+  });
+
   constructor() {
     // Get username from route
     const usernameParam = this.route.snapshot.paramMap.get('username');
@@ -188,8 +203,21 @@ export class BookingPageComponent {
   selectDate(day: { date: Date | null, isSelectable: boolean }) {
     if (!day.date || !day.isSelectable) return;
     this.selectedDate.set(day.date);
-    this.selectedSlot.set(null); // reset slot
+    this.selectedSlot.set(null);
+    this.slotsCurrentPage.set(1);
     this.fetchAvailableSlots(day.date);
+  }
+
+  nextSlotsPage() {
+    if (this.slotsCurrentPage() < this.slotsTotalPages()) {
+      this.slotsCurrentPage.update(p => p + 1);
+    }
+  }
+
+  prevSlotsPage() {
+    if (this.slotsCurrentPage() > 1) {
+      this.slotsCurrentPage.update(p => p - 1);
+    }
   }
 
   selectSlot(slot: TimeSlot) {
@@ -229,7 +257,8 @@ export class BookingPageComponent {
       duration: this.duration(),
       date: dateStr,
       startTime: startTimeStr,
-      notes: this.notes()
+      notes: this.notes(),
+      timezone: this.timezone()
     };
 
     this.bookingService.publicCreateBooking(payload).subscribe({
