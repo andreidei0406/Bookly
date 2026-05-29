@@ -245,6 +245,13 @@ export class BookingPageComponent {
     const hostUser = this.username();
 
     if (!this.guestName() || !this.guestEmail() || !slot || !hostUser) return;
+
+    // Timezone-safe and format-safe regex email check
+    const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailPattern.test(this.guestEmail().trim())) {
+      alert('Please enter a valid email address.');
+      return;
+    }
     
     this.isSubmitting.set(true);
 

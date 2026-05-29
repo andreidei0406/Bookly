@@ -54,6 +54,7 @@ export const updateProfileSchema = {
       .string()
       .url('Avatar must be a valid URL')
       .optional(),
+    plan: z.enum(['FREE', 'PREMIUM', 'ULTIMATE']).optional(),
   }),
 };
 

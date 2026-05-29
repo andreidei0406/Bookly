@@ -424,3 +424,52 @@ export async function googleLogin(googleData) {
     refreshToken: appRefreshToken,
   };
 }
+
+/**
+ * Link a Google account to an existing user account.
+ * @param {string} userId - Current logged-in user ID
+ * @param {object} googleData - Google OAuth data from passport
+ * @returns {Promise<object>} - Updated user
+ */
+export async function linkGoogleAccount(userId, googleData) {
+  const { googleId, email, accessToken, refreshToken, expiryDate } = googleData;
+
+  // 1. Check if another user is already using this googleId
+  const existingGoogleUser = await prisma.user.findFirst({
+    where: {
+      googleId,
+      NOT: { id: userId }
+    }
+  });
+
+  if (existingGoogleUser) {
+    // Unlink the old user cleanly to avoid duplicate constraints and ensure a seamless re-link
+    await prisma.user.update({
+      where: { id: existingGoogleUser.id },
+      data: {
+        googleId: null,
+        googleAccessToken: null,
+        googleRefreshToken: null,
+        googleTokenExpiry: null
+      }
+    });
+  }
+
+  // 2. Link Google credentials to current logged-in user session
+  const updatedUser = await prisma.user.update({
+    where: { id: userId },
+    data: {
+      googleId,
+      googleAccessToken: accessToken,
+      googleRefreshToken: refreshToken || undefined, // Keep existing if new is empty
+      googleTokenExpiry: expiryDate,
+    }
+  });
+
+  logger.info(`Linked Google account ${email} to Bookly user ID: ${userId}`);
+  
+  // Background-sync missing Google Meet links now that Google is linked
+  syncMissingMeetLinks(userId);
+
+  return excludePassword(updatedUser);
+}

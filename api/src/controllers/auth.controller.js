@@ -3,6 +3,7 @@ import catchAsync from '../utils/catchAsync.js';
 import * as authService from '../services/auth.service.js';
 import prisma from '../utils/prisma.js';
 import { syncMissingMeetLinks } from '../services/booking.service.js';
+import { verifyAccessToken } from '../utils/tokens.js';
 
 /**
  * Register a new user account.
@@ -116,25 +117,50 @@ export const resetPassword = catchAsync(async (req, res) => {
  */
 export const googleCallback = catchAsync(async (req, res) => {
   // req.user contains the googleData from passport
-  const result = await authService.googleLogin(req.user);
-  
-  res.cookie('accessToken', result.accessToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax', // Must be lax or none for OAuth redirect back
-    maxAge: 15 * 60 * 1000 // 15 minutes
-  });
+  const googleData = req.user;
+  let currentUserId = null;
 
-  res.cookie('refreshToken', result.refreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-  });
-  
+  // Determine if the user is already logged in by verifying the accessToken cookie
+  const token = req.cookies?.accessToken;
+  if (token) {
+    try {
+      const decoded = verifyAccessToken(token);
+      currentUserId = decoded.id;
+    } catch (err) {
+      // Ignore expired/invalid token cookie
+    }
+  }
+
   const frontendUrl = process.env.CORS_ORIGIN || 'http://localhost:4200';
-  const redirectUrl = new URL(`${frontendUrl}/dashboard`);
-  res.redirect(redirectUrl.toString());
+
+  if (currentUserId) {
+    // 1. LINKING FLOW: User is already logged in, connect Google to their current Bookly session
+    await authService.linkGoogleAccount(currentUserId, googleData);
+    
+    // Redirect back to settings page directly
+    const redirectUrl = new URL(`${frontendUrl}/dashboard/settings`);
+    res.redirect(redirectUrl.toString());
+  } else {
+    // 2. SIGN IN / LOGIN FLOW: Standard OAuth sign-in flow
+    const result = await authService.googleLogin(googleData);
+    
+    res.cookie('accessToken', result.accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax', // Must be lax or none for OAuth redirect back
+      maxAge: 15 * 60 * 1000 // 15 minutes
+    });
+
+    res.cookie('refreshToken', result.refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    });
+    
+    const redirectUrl = new URL(`${frontendUrl}/dashboard`);
+    res.redirect(redirectUrl.toString());
+  }
 });
 
 /**

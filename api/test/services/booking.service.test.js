@@ -69,6 +69,7 @@ const makeHost = (overrides = {}) => ({
   googleAccessToken: null,
   googleRefreshToken: null,
   googleTokenExpiry: null,
+  plan: 'ULTIMATE',
   ...overrides,
 });
 

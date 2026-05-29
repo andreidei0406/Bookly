@@ -20,6 +20,8 @@ const USER_SELECT_SAFE = {
   lastName: true,
   phone: true,
   avatar: true,
+  plan: true,
+  googleId: true,
   createdAt: true,
   updatedAt: true,
 };
@@ -88,6 +90,7 @@ export async function updateProfile(userId, data) {
       ...(data.lastName !== undefined && { lastName: data.lastName }),
       ...(data.phone !== undefined && { phone: data.phone }),
       ...(data.avatar !== undefined && { avatar: data.avatar }),
+      ...(data.plan !== undefined && { plan: data.plan }),
     },
     select: USER_SELECT_SAFE,
   });

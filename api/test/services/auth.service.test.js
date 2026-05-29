@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { register, login, refreshTokens, logout, forgotPassword, resetPassword, googleLogin } from '../../src/services/auth.service.js';
+import { register, login, refreshTokens, logout, forgotPassword, resetPassword, googleLogin, linkGoogleAccount } from '../../src/services/auth.service.js';
 import prisma from '../../src/utils/prisma.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
@@ -10,6 +10,7 @@ vi.mock('../../src/utils/prisma.js', () => ({
   default: {
     user: {
       findUnique: vi.fn(),
+      findFirst: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
     },
@@ -307,6 +308,74 @@ describe('Auth Service', () => {
 
       expect(result.user.email).toBe('new_google@example.com');
       expect(prisma.user.create).toHaveBeenCalled();
+    });
+  });
+
+  describe('linkGoogleAccount()', () => {
+    it('should link Google account directly to currently logged-in user', async () => {
+      const googleData = {
+        googleId: 'g123_unique',
+        email: 'mygoogle@example.com',
+        accessToken: 'new_g_access',
+        refreshToken: 'new_g_refresh',
+        expiryDate: new Date()
+      };
+
+      prisma.user.findFirst.mockResolvedValueOnce(null); // No other user has this googleId
+      prisma.user.update.mockResolvedValue({
+        id: 'current_user_id',
+        email: 'current@bookly.com',
+        firstName: 'Active',
+        lastName: 'User',
+        googleId: 'g123_unique'
+      });
+
+      const result = await linkGoogleAccount('current_user_id', googleData);
+
+      expect(result.googleId).toBe('g123_unique');
+      expect(prisma.user.findFirst).toHaveBeenCalled();
+      expect(prisma.user.update).toHaveBeenCalledWith({
+        where: { id: 'current_user_id' },
+        data: {
+          googleId: 'g123_unique',
+          googleAccessToken: 'new_g_access',
+          googleRefreshToken: 'new_g_refresh',
+          googleTokenExpiry: googleData.expiryDate
+        }
+      });
+    });
+
+    it('should unlink Google account from another user first if already in use', async () => {
+      const googleData = {
+        googleId: 'g123_shared',
+        email: 'shared@example.com',
+        accessToken: 'new_g_access',
+        refreshToken: 'new_g_refresh',
+        expiryDate: new Date()
+      };
+
+      prisma.user.findFirst.mockResolvedValueOnce({ id: 'old_user_id', email: 'old@bookly.com' });
+      prisma.user.update
+        .mockResolvedValueOnce({ id: 'old_user_id', googleId: null }) // First call unlinks old user
+        .mockResolvedValueOnce({
+          id: 'current_user_id',
+          email: 'current@bookly.com',
+          googleId: 'g123_shared'
+        }); // Second call links current user
+
+      const result = await linkGoogleAccount('current_user_id', googleData);
+
+      expect(result.googleId).toBe('g123_shared');
+      expect(prisma.user.update).toHaveBeenCalledTimes(2);
+      expect(prisma.user.update).toHaveBeenNthCalledWith(1, {
+        where: { id: 'old_user_id' },
+        data: {
+          googleId: null,
+          googleAccessToken: null,
+          googleRefreshToken: null,
+          googleTokenExpiry: null
+        }
+      });
     });
   });
 });

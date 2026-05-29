@@ -11,6 +11,12 @@ enum PlatformRole {
   SUPER_ADMIN
 }
 
+enum SubscriptionPlan {
+  FREE
+  PREMIUM
+  ULTIMATE
+}
+
 enum BookingStatus {
   PENDING
   CONFIRMED
@@ -20,23 +26,24 @@ enum BookingStatus {
 }
 
 model User {
-  id                 String          @id @default(cuid())
-  username           String          @unique
-  email              String          @unique
+  id                 String           @id @default(cuid())
+  username           String           @unique
+  email              String           @unique
   password           String?
   firstName          String
   lastName           String
   phone              String?
   avatar             String?
-  platformRole       PlatformRole    @default(USER)
-  isActive           Boolean         @default(true)
-  emailVerified      Boolean         @default(false)
-  googleId           String?         @unique
+  platformRole       PlatformRole     @default(USER)
+  isActive           Boolean          @default(true)
+  emailVerified      Boolean          @default(false)
+  googleId           String?          @unique
   googleAccessToken  String?
   googleRefreshToken String?
   googleTokenExpiry  DateTime?
-  createdAt          DateTime        @default(now())
-  updatedAt          DateTime        @updatedAt
+  plan               SubscriptionPlan @default(FREE)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
 
   availabilityBlocks AvailabilityBlock[]
   bookings           Booking[]       @relation("HostBookings")

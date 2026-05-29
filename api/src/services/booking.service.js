@@ -104,7 +104,7 @@ export async function publicCreate({ hostUsername, guestName, guestEmail, meetin
     throw ApiError.conflict('The selected time slot is not available');
   }
 
-  const status = host.googleAccessToken ? 'CONFIRMED' : 'PENDING';
+  const status = (host.googleAccessToken && host.plan === 'ULTIMATE') ? 'CONFIRMED' : 'PENDING';
 
   const booking = await prisma.booking.create({
     data: {
@@ -126,12 +126,12 @@ export async function publicCreate({ hostUsername, guestName, guestEmail, meetin
     },
   });
 
-  // Generate Google Meet link if host is connected
+  // Generate Google Meet link if host is connected and on ULTIMATE plan
   let meetLink = null;
   let googleEventId = null;
   let finalBooking = booking;
 
-  if (host.googleAccessToken) {
+  if (host.googleAccessToken && host.plan === 'ULTIMATE') {
     // Pass a dummy service to createCalendarEventWithMeet to keep signature
     const dummyService = { name: meetingName, duration };
     // Pass timezone in booking object
@@ -487,7 +487,7 @@ export async function syncMissingMeetLinks(hostId) {
       where: { id: hostId },
     });
 
-    if (!host || !host.googleAccessToken) {
+    if (!host || !host.googleAccessToken || host.plan !== 'ULTIMATE') {
       return;
     }
 

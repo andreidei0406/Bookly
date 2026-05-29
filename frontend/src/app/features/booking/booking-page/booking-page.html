@@ -1,5 +1,24 @@
 <div class="min-h-screen bg-muted/30 flex items-center justify-center p-4">
-  <div class="w-full max-w-4xl bg-card text-card-foreground shadow-sm rounded-xl border overflow-hidden grid grid-cols-1 md:grid-cols-[1fr_2fr] transition-all duration-300 min-h-[500px]">
+  
+  <!-- Inactive Subscription Notice for Free Plan Hosts -->
+  <div *ngIf="host() && host()?.plan === 'FREE'" class="w-full max-w-md bg-white rounded-3xl p-8 border border-slate-200/80 shadow-xl text-center relative overflow-hidden animate-in zoom-in-95 duration-300">
+    <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-amber-50 border border-amber-200 text-amber-500 mb-6 shadow-sm">
+      <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+      </svg>
+    </div>
+    <h2 class="text-2xl font-extrabold text-slate-900 mb-3 tracking-tight">Booking Page Inactive</h2>
+    <p class="text-slate-500 text-sm leading-relaxed mb-6">
+      This scheduling page is currently inactive because the host is on the <strong>Free</strong> subscription plan. 
+      Hosts must upgrade to a Premium or Ultimate plan to share their booking links.
+    </p>
+    <div class="w-full border-t border-slate-100 pt-6">
+      <a routerLink="/" class="text-sm font-semibold text-indigo-600 hover:text-indigo-700 transition-colors">Powered by Bookly</a>
+    </div>
+  </div>
+
+  <!-- Standard Booking Flow (Only if NOT Free) -->
+  <div *ngIf="!host() || host()?.plan !== 'FREE'" class="w-full max-w-4xl bg-card text-card-foreground shadow-sm rounded-xl border overflow-hidden grid grid-cols-1 md:grid-cols-[1fr_2fr] transition-all duration-300 min-h-[500px]">
     
     <!-- Left Column: Host & Service Info -->
     <div class="p-6 md:p-8 border-b md:border-b-0 md:border-r bg-muted/10">
@@ -156,19 +175,30 @@
           
           <h2 class="text-xl font-semibold mb-6">Enter Details</h2>
           
-          <form (submit)="$event.preventDefault(); submitBooking()" class="space-y-4">
+          <form #bookingForm="ngForm" (submit)="$event.preventDefault(); bookingForm.valid && submitBooking()" class="space-y-4">
             <div class="space-y-2">
               <label for="name" class="text-sm font-medium">Name *</label>
-              <input type="text" id="name" [ngModel]="guestName()" (ngModelChange)="guestName.set($event)" name="name" required
-                class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              <input type="text" id="name" [ngModel]="guestName()" (ngModelChange)="guestName.set($event)" name="name" required #nameInput="ngModel"
+                [class.border-red-500]="nameInput.invalid && (nameInput.dirty || nameInput.touched)"
+                [class.focus-visible:ring-red-500]="nameInput.invalid && (nameInput.dirty || nameInput.touched)"
+                class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
                 placeholder="John Doe" />
+              <div *ngIf="nameInput.invalid && (nameInput.dirty || nameInput.touched)" class="text-xs text-red-500 font-medium animate-in fade-in duration-200">
+                Name is required.
+              </div>
             </div>
             
             <div class="space-y-2">
               <label for="email" class="text-sm font-medium">Email *</label>
-              <input type="email" id="email" [ngModel]="guestEmail()" (ngModelChange)="guestEmail.set($event)" name="email" required
-                class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              <input type="email" id="email" [ngModel]="guestEmail()" (ngModelChange)="guestEmail.set($event)" name="email" required email #emailInput="ngModel"
+                [class.border-red-500]="emailInput.invalid && (emailInput.dirty || emailInput.touched)"
+                [class.focus-visible:ring-red-500]="emailInput.invalid && (emailInput.dirty || emailInput.touched)"
+                class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
                 placeholder="john@example.com" />
+              <div *ngIf="emailInput.invalid && (emailInput.dirty || emailInput.touched)" class="text-xs text-red-500 font-medium animate-in fade-in duration-200">
+                <span *ngIf="emailInput.errors?.['required']">Email is required.</span>
+                <span *ngIf="emailInput.errors?.['email']">Please enter a valid email address.</span>
+              </div>
             </div>
             
             <div class="space-y-2">
@@ -179,8 +209,8 @@
             </div>
             
             <div class="pt-4">
-              <button type="submit" [disabled]="isSubmitting() || !guestName() || !guestEmail()"
-                class="px-6 py-2.5 rounded-md bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50">
+              <button type="submit" [disabled]="isSubmitting() || bookingForm.invalid"
+                class="px-6 py-2.5 rounded-md bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 disabled:pointer-events-none">
                 <span *ngIf="!isSubmitting()">Schedule Event</span>
                 <span *ngIf="isSubmitting()" class="flex items-center gap-2">
                   <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

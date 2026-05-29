@@ -29,6 +29,21 @@ export class RegisterComponent {
     ]]
   });
 
+  hasMinLength(): boolean {
+    const pwd = this.registerForm.get('password')?.value || '';
+    return pwd.length >= 8;
+  }
+
+  hasCaseMix(): boolean {
+    const pwd = this.registerForm.get('password')?.value || '';
+    return /[a-z]/.test(pwd) && /[A-Z]/.test(pwd);
+  }
+
+  hasNumberAndSpecial(): boolean {
+    const pwd = this.registerForm.get('password')?.value || '';
+    return /\d/.test(pwd) && /[^A-Za-z0-9]/.test(pwd);
+  }
+
   onSubmit() {
     if (this.registerForm.invalid) return;
     

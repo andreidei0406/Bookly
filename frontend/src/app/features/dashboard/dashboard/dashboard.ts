@@ -10,6 +10,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { AvailabilityService } from '../../../core/services/availability.service';
 import { IntegrationService } from '../../../core/services/integration.service';
 import { BookingService } from '../../../core/services/booking.service';
+import { BillingService } from '../../../core/services/billing.service';
 import { SettingsComponent } from '../settings/settings.component';
 import { BookingsListComponent } from '../bookings/bookings-list.component';
 import { environment } from '../../../../environments/environment';
@@ -33,6 +34,7 @@ export class Dashboard implements OnInit {
   private availabilityService = inject(AvailabilityService);
   private integrationService = inject(IntegrationService);
   private bookingService = inject(BookingService);
+  private billingService = inject(BillingService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private cdr = inject(ChangeDetectorRef);
@@ -49,6 +51,7 @@ export class Dashboard implements OnInit {
   // Selected event for details dialog
   selectedEvent = signal<any | null>(null);
   showShareDialog = signal(false);
+  showUpgradeDialog = signal(false);
   linkCopied = signal(false);
   meetingName = signal('');
   meetingDuration = signal<number>(15);
@@ -431,6 +434,10 @@ export class Dashboard implements OnInit {
   }
 
   openShareDialog() {
+    if (this.currentUser()?.plan === 'FREE') {
+      this.showUpgradeDialog.set(true);
+      return;
+    }
     this.showShareDialog.set(true);
     this.linkCopied.set(false);
     this.meetingName.set('');
@@ -438,6 +445,25 @@ export class Dashboard implements OnInit {
 
   closeShareDialog() {
     this.showShareDialog.set(false);
+  }
+
+  closeUpgradeDialog() {
+    this.showUpgradeDialog.set(false);
+  }
+
+  upgradePlan(plan: 'PREMIUM' | 'ULTIMATE') {
+    this.billingService.createCheckoutSession(plan).subscribe({
+      next: (res) => {
+        this.showUpgradeDialog.set(false);
+        if (res.data?.checkoutUrl) {
+          window.location.href = res.data.checkoutUrl;
+        }
+      },
+      error: (err) => {
+        console.error('Failed to upgrade plan', err);
+        alert('Failed to upgrade subscription plan. Please try again.');
+      }
+    });
   }
 
   copyLink() {

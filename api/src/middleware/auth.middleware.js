@@ -43,7 +43,7 @@ const authenticate = async (req, res, next) => {
       throw ApiError.unauthorized('Authentication failed');
     }
 
-    const user = await prisma.user.findUnique({
+    let user = await prisma.user.findUnique({
       where: { id: decoded.id },
       select: {
         id: true,
@@ -52,6 +52,7 @@ const authenticate = async (req, res, next) => {
         lastName: true,
         platformRole: true,
         isActive: true,
+        plan: true,
       },
     });
 
@@ -69,6 +70,7 @@ const authenticate = async (req, res, next) => {
       firstName: user.firstName,
       lastName: user.lastName,
       platformRole: user.platformRole,
+      plan: user.plan,
     };
 
     next();

@@ -7,10 +7,7 @@ export const routes: Routes = [
     loadComponent: () => import('./features/landing/landing/landing').then(m => m.LandingComponent),
     pathMatch: 'full'
   },
-  {
-    path: 'pricing',
-    loadComponent: () => import('./features/pricing/pricing.component').then(m => m.PricingComponent)
-  },
+
   {
     path: 'login',
     loadComponent: () => import('./features/auth/login/login.component').then(m => m.LoginComponent),

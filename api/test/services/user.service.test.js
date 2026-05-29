@@ -41,6 +41,8 @@ const USER_SELECT_SAFE = {
   lastName: true,
   phone: true,
   avatar: true,
+  plan: true,
+  googleId: true,
   createdAt: true,
   updatedAt: true,
 };

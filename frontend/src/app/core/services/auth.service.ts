@@ -12,6 +12,7 @@ export interface User {
   lastName: string;
   platformRole: string;
   googleId?: string;
+  plan?: string;
 }
 
 @Injectable({
@@ -71,7 +72,7 @@ export class AuthService {
     );
   }
 
-  logout(redirectUrl: string = '/login') {
+  logout(redirectUrl: string = '/') {
     return this.http.post(`${this.API_URL}/logout`, {}).pipe(
       tap(() => this.clearSession(redirectUrl)),
       catchError(() => {
@@ -81,20 +82,10 @@ export class AuthService {
     );
   }
 
-  clearSession(redirectUrl: string = '/login') {
+  clearSession(redirectUrl: string = '/') {
     this.currentUser.set(null);
     this.isAuthenticated.set(false);
-    
-    // Only redirect to /login if redirectUrl is explicitly custom (like '/' from guest cancel)
-    // or if the current active URL path is in the protected area (starts with /dashboard).
-    if (redirectUrl !== '/login') {
-      this.router.navigate([redirectUrl]);
-    } else {
-      const currentPath = window.location.pathname;
-      if (currentPath.startsWith('/dashboard')) {
-        this.router.navigate(['/login']);
-      }
-    }
+    this.router.navigate([redirectUrl]);
   }
 
   refreshTokens() {
@@ -107,5 +98,13 @@ export class AuthService {
 
   getPublicProfile(username: string) {
     return this.http.get<{data: User}>(`http://localhost:3000/api/v1/users/${username}`);
+  }
+
+  updateProfile(data: any) {
+    return this.http.patch<{data: User}>('http://localhost:3000/api/v1/users/me', data, { withCredentials: true }).pipe(
+      tap(res => {
+        this.currentUser.set(res.data);
+      })
+    );
   }
 }

@@ -25,6 +25,7 @@ async function main() {
     update: {
       password: adminPassword,
       username: 'admin',
+      plan: 'ULTIMATE',
     },
     create: {
       username: 'admin',
@@ -36,6 +37,7 @@ async function main() {
       platformRole: 'SUPER_ADMIN',
       isActive: true,
       emailVerified: true,
+      plan: 'ULTIMATE',
     },
   });
 
@@ -49,6 +51,7 @@ async function main() {
     update: {
       password: hostPassword,
       username: 'jane-doe',
+      plan: 'ULTIMATE',
     },
     create: {
       username: 'jane-doe',
@@ -60,6 +63,7 @@ async function main() {
       platformRole: 'USER',
       isActive: true,
       emailVerified: true,
+      plan: 'ULTIMATE',
     },
   });
 
