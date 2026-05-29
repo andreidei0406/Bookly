@@ -11,6 +11,7 @@ import {
   forgotPasswordSchema,
   resetPasswordSchema,
 } from '../validators/auth.validator.js';
+import prisma from '../utils/prisma.js';
 
 const router = Router();
 

@@ -23,7 +23,10 @@ export const createBookingSchema = {
   body: z.object({
     guestName: z.string({ required_error: 'Guest name is required' }).trim(),
     guestEmail: z.string({ required_error: 'Guest email is required' }).email(),
-    meetingName: z.string({ required_error: 'Meeting name is required' }).trim(),
+    meetingName: z
+      .string({ required_error: 'Meeting name is required' })
+      .trim()
+      .max(50, 'Meeting name cannot exceed 50 characters'),
     duration: z.number().int().positive(),
     date: z
       .string({ required_error: 'Date is required' })
@@ -32,6 +35,7 @@ export const createBookingSchema = {
       .string({ required_error: 'Start time is required' })
       .regex(timeRegex, 'Start time must be in HH:mm format (24-hour)'),
     notes: z.string().trim().optional(),
+    timezone: z.string().trim().optional(),
   }),
 };
 
@@ -44,7 +48,10 @@ export const publicCreateBookingSchema = {
     hostUsername: z.string({ required_error: 'Host username is required' }),
     guestName: z.string({ required_error: 'Guest name is required' }).trim(),
     guestEmail: z.string({ required_error: 'Guest email is required' }).email('Invalid email address'),
-    meetingName: z.string({ required_error: 'Meeting name is required' }).trim(),
+    meetingName: z
+      .string({ required_error: 'Meeting name is required' })
+      .trim()
+      .max(50, 'Meeting name cannot exceed 50 characters'),
     duration: z.number().int().positive(),
     date: z
       .string({ required_error: 'Date is required' })
@@ -53,6 +60,7 @@ export const publicCreateBookingSchema = {
       .string({ required_error: 'Start time is required' })
       .regex(timeRegex, 'Start time must be in HH:mm format (24-hour)'),
     notes: z.string().trim().optional(),
+    timezone: z.string().trim().optional(),
   }),
 };
 

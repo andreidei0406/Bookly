@@ -13,6 +13,7 @@ import logger from '../config/logger.js';
 import ApiError from '../utils/apiError.js';
 import { generateAccessToken, generateRefreshToken } from '../utils/tokens.js';
 import { sendWelcomeEmail, sendPasswordResetEmail } from './email.service.js';
+import { syncMissingMeetLinks } from './booking.service.js';
 
 const BCRYPT_ROUNDS = 12;
 
@@ -140,6 +141,9 @@ export async function login({ email, password }) {
   });
 
   logger.info(`User logged in: ${user.email}`);
+
+  // Background-sync missing Google Meet links
+  syncMissingMeetLinks(user.id);
 
   return {
     user: excludePassword(user),
@@ -410,6 +414,9 @@ export async function googleLogin(googleData) {
   });
 
   logger.info(`User logged in via Google: ${user.email}`);
+
+  // Background-sync missing Google Meet links
+  syncMissingMeetLinks(user.id);
 
   return {
     user: excludePassword(user),

@@ -37,7 +37,6 @@ model User {
   googleTokenExpiry  DateTime?
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
-  deletedAt          DateTime?
 
   availabilityBlocks AvailabilityBlock[]
   bookings           Booking[]       @relation("HostBookings")

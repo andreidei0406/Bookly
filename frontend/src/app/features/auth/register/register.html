@@ -17,12 +17,17 @@
         <p class="text-gray-400">Start managing your bookings for free</p>
       </div>
 
-      <div class="space-y-6">
+      <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="space-y-6">
+        <div *ngIf="errorMsg" class="p-3 bg-red-500/10 border border-red-500/50 rounded-xl text-red-400 text-sm">
+          {{ errorMsg }}
+        </div>
+
         <div class="grid grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-300 mb-2">First name</label>
             <input 
               type="text" 
+              formControlName="firstName"
               class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-transparent transition-all"
               placeholder="Jane">
           </div>
@@ -30,6 +35,7 @@
             <label class="block text-sm font-medium text-gray-300 mb-2">Last name</label>
             <input 
               type="text" 
+              formControlName="lastName"
               class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-transparent transition-all"
               placeholder="Doe">
           </div>
@@ -39,6 +45,7 @@
           <label class="block text-sm font-medium text-gray-300 mb-2">Email address</label>
           <input 
             type="email" 
+            formControlName="email"
             class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-transparent transition-all"
             placeholder="you@company.com">
         </div>
@@ -47,12 +54,17 @@
           <label class="block text-sm font-medium text-gray-300 mb-2">Password</label>
           <input 
             type="password" 
+            formControlName="password"
             class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-transparent transition-all"
             placeholder="••••••••">
         </div>
 
-        <button class="w-full bg-brand-600 hover:bg-brand-500 text-white font-semibold py-3.5 rounded-xl shadow-lg hover:shadow-brand-500/25 transition-all transform hover:-translate-y-0.5 focus:outline-none focus:ring-4 focus:ring-brand-500/30">
-          Create account
+        <button 
+          type="submit"
+          [disabled]="registerForm.invalid || isSubmitting"
+          class="w-full bg-brand-600 hover:bg-brand-500 text-white font-semibold py-3.5 rounded-xl shadow-lg hover:shadow-brand-500/25 transition-all transform hover:-translate-y-0.5 focus:outline-none focus:ring-4 focus:ring-brand-500/30 disabled:opacity-50 disabled:cursor-not-allowed">
+          <span *ngIf="isSubmitting">Creating account...</span>
+          <span *ngIf="!isSubmitting">Create account</span>
         </button>
 
         <div class="relative flex items-center py-2">
@@ -62,6 +74,7 @@
         </div>
 
         <button 
+          type="button"
           (click)="loginWithGoogle()"
           class="w-full bg-white/5 hover:bg-white/10 text-white font-medium py-3.5 rounded-xl border border-white/10 flex items-center justify-center gap-3 transition-all focus:outline-none focus:ring-2 focus:ring-white/20">
           <svg class="w-5 h-5" viewBox="0 0 24 24">
@@ -72,7 +85,7 @@
           </svg>
           Google
         </button>
-      </div>
+      </form>
 
       <p class="mt-8 text-center text-sm text-gray-400">
         Already have an account? 

@@ -121,7 +121,7 @@ export class BookingPageComponent {
     // Read meeting name and duration from query params
     const meetingParam = this.route.snapshot.queryParamMap.get('meeting');
     if (meetingParam) {
-      this.meetingNameFromUrl.set(decodeURIComponent(meetingParam));
+      this.meetingNameFromUrl.set(decodeURIComponent(meetingParam).substring(0, 50));
     }
     const durationParam = this.route.snapshot.queryParamMap.get('duration');
     if (durationParam) {
@@ -186,11 +186,17 @@ export class BookingPageComponent {
 
     this.availabilityService.getAvailableSlots(this.username(), dateStr, this.duration()).subscribe({
       next: (res) => {
-        const slots: TimeSlot[] = res.data.map(slot => {
-          const start = new Date(`${dateStr}T${slot.startTime}:00`);
-          const end = new Date(`${dateStr}T${slot.endTime}:00`);
-          return { start, end };
-        });
+        const oneHourFromNow = Date.now() + 60 * 60 * 1000;
+        const slots: TimeSlot[] = res.data
+          .map(slot => {
+            const start = new Date(`${dateStr}T${slot.startTime}:00`);
+            const end = new Date(`${dateStr}T${slot.endTime}:00`);
+            return { start, end };
+          })
+          .filter(slot => {
+            // Only allow booking slots starting at least 1 hour from the current local time
+            return slot.start.getTime() >= oneHourFromNow;
+          });
         this.availableSlots.set(slots);
       },
       error: (err) => {

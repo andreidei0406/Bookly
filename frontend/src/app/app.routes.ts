@@ -57,6 +57,10 @@ export const routes: Routes = [
     loadComponent: () => import('./features/booking/booking-cancel.component').then(m => m.BookingCancelComponent)
   },
   {
+    path: 'booking/:id/guest-cancel',
+    loadComponent: () => import('./features/booking/guest-cancel.component').then(m => m.GuestCancelComponent)
+  },
+  {
     path: 'auth/callback',
     loadComponent: () => import('./features/auth/auth-callback/auth-callback.component').then(m => m.AuthCallbackComponent)
   }

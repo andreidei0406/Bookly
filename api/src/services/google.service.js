@@ -135,3 +135,37 @@ export async function fetchCalendarEvents(user, startDate, endDate) {
     return [];
   }
 }
+
+/**
+ * Delete a Google Calendar Event
+ * @param {object} user - The user object with Google tokens
+ * @param {string} eventId - The Google Calendar Event ID to delete
+ * @returns {Promise<boolean>} Success status
+ */
+export async function deleteCalendarEvent(user, eventId) {
+  if (!user || !user.googleAccessToken || !eventId) {
+    return false;
+  }
+
+  try {
+    oauth2Client.setCredentials({
+      access_token: user.googleAccessToken,
+      refresh_token: user.googleRefreshToken,
+      expiry_date: user.googleTokenExpiry?.getTime(),
+    });
+
+    const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+
+    await calendar.events.delete({
+      calendarId: 'primary',
+      eventId: eventId,
+      sendUpdates: 'all', // Send cancellation email to guest attendee
+    });
+
+    logger.info(`Successfully deleted Google Calendar event ${eventId} for host ${user.id}`);
+    return true;
+  } catch (error) {
+    logger.error(`Failed to delete Google Calendar event ${eventId}: ${error.message}`);
+    return false;
+  }
+}

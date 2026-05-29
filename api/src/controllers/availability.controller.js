@@ -1,6 +1,7 @@
 import { success } from '../utils/apiResponse.js';
 import catchAsync from '../utils/catchAsync.js';
 import * as availabilityService from '../services/availability.service.js';
+import logger from '../config/logger.js';
 
 /**
  * Get available booking slots for a user.
@@ -49,7 +50,9 @@ export const createBlock = catchAsync(async (req, res) => {
  * @route DELETE /api/v1/availability/blocks/clear
  */
 export const clearBlocks = catchAsync(async (req, res) => {
+  logger.info(`clearBlocks request received for user ${req.user.id}. Query: ${JSON.stringify(req.query)}`);
   const result = await availabilityService.clearBlocks(req.user.id, req.query);
+  logger.info(`clearBlocks result: ${JSON.stringify(result)}`);
   return success(res, { data: result });
 });
 

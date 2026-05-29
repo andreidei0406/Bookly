@@ -90,6 +90,7 @@ export async function sendEmail({ to, subject, template, context }) {
 
     await transporter.sendMail({
       from: config.email.from,
+      replyTo: 'noreply@bookly.com',
       to,
       subject,
       html,
@@ -128,6 +129,9 @@ export async function sendBookingConfirmation(booking) {
   const customerEmail = booking.guestEmail;
   if (!customerEmail) {return;}
 
+  const frontendUrl = config.cors.origin || 'http://localhost:4200';
+  const cancelUrl = `${frontendUrl}/booking/${booking.id}/guest-cancel`;
+
   await sendEmail({
     to: customerEmail,
     subject: `Booking Confirmed: ${booking.meetingName} - Bookly`,
@@ -136,11 +140,43 @@ export async function sendBookingConfirmation(booking) {
       firstName: booking.guestName,
       serviceName: booking.meetingName,
       businessName: booking.host?.firstName ? `${booking.host.firstName} ${booking.host.lastName}` : 'Your Host',
+      hostEmail: booking.host?.email || 'support@bookly.com',
       date: booking.date instanceof Date ? booking.date.toLocaleDateString() : booking.date,
       startTime: booking.startTime,
       endTime: booking.endTime,
       status: booking.status,
       meetLink: booking.meetLink,
+      cancelUrl,
+      year: new Date().getFullYear(),
+    },
+  });
+}
+
+/**
+ * Send a booking pending email.
+ * @param {object} booking - The booking.
+ */
+export async function sendBookingPending(booking) {
+  const customerEmail = booking.guestEmail;
+  if (!customerEmail) {return;}
+
+  const frontendUrl = config.cors.origin || 'http://localhost:4200';
+  const cancelUrl = `${frontendUrl}/booking/${booking.id}/guest-cancel`;
+
+  await sendEmail({
+    to: customerEmail,
+    subject: `Booking Received (Pending): ${booking.meetingName} - Bookly`,
+    template: 'booking-pending',
+    context: {
+      firstName: booking.guestName,
+      serviceName: booking.meetingName,
+      businessName: booking.host?.firstName ? `${booking.host.firstName} ${booking.host.lastName}` : 'Your Host',
+      hostEmail: booking.host?.email || 'support@bookly.com',
+      date: booking.date instanceof Date ? booking.date.toLocaleDateString() : booking.date,
+      startTime: booking.startTime,
+      endTime: booking.endTime,
+      status: booking.status,
+      cancelUrl,
       year: new Date().getFullYear(),
     },
   });
@@ -154,6 +190,9 @@ export async function sendBookingCancellation(booking) {
   const customerEmail = booking.guestEmail;
   if (!customerEmail) {return;}
 
+  const frontendUrl = config.cors.origin || 'http://localhost:4200';
+  const rebookUrl = booking.host?.username ? `${frontendUrl}/booking/${booking.host.username}` : `${frontendUrl}`;
+
   await sendEmail({
     to: customerEmail,
     subject: `Booking Cancelled: ${booking.meetingName} - Bookly`,
@@ -162,10 +201,12 @@ export async function sendBookingCancellation(booking) {
       firstName: booking.guestName,
       serviceName: booking.meetingName,
       businessName: booking.host?.firstName ? `${booking.host.firstName} ${booking.host.lastName}` : 'Your Host',
+      hostEmail: booking.host?.email || 'support@bookly.com',
       date: booking.date instanceof Date ? booking.date.toLocaleDateString() : booking.date,
       startTime: booking.startTime,
       endTime: booking.endTime,
       cancelReason: booking.cancelReason || null,
+      rebookUrl,
       year: new Date().getFullYear(),
     },
   });

@@ -71,20 +71,30 @@ export class AuthService {
     );
   }
 
-  logout() {
+  logout(redirectUrl: string = '/login') {
     return this.http.post(`${this.API_URL}/logout`, {}).pipe(
-      tap(() => this.clearSession()),
+      tap(() => this.clearSession(redirectUrl)),
       catchError(() => {
-        this.clearSession();
+        this.clearSession(redirectUrl);
         return throwError(() => new Error('Logout failed'));
       })
     );
   }
 
-  clearSession() {
+  clearSession(redirectUrl: string = '/login') {
     this.currentUser.set(null);
     this.isAuthenticated.set(false);
-    this.router.navigate(['/login']);
+    
+    // Only redirect to /login if redirectUrl is explicitly custom (like '/' from guest cancel)
+    // or if the current active URL path is in the protected area (starts with /dashboard).
+    if (redirectUrl !== '/login') {
+      this.router.navigate([redirectUrl]);
+    } else {
+      const currentPath = window.location.pathname;
+      if (currentPath.startsWith('/dashboard')) {
+        this.router.navigate(['/login']);
+      }
+    }
   }
 
   refreshTokens() {

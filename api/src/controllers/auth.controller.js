@@ -2,6 +2,7 @@ import { created, success, noContent } from '../utils/apiResponse.js';
 import catchAsync from '../utils/catchAsync.js';
 import * as authService from '../services/auth.service.js';
 import prisma from '../utils/prisma.js';
+import { syncMissingMeetLinks } from '../services/booking.service.js';
 
 /**
  * Register a new user account.
@@ -148,6 +149,9 @@ export const getMe = catchAsync(async (req, res) => {
   if (!user) {
     return res.status(401).json({ error: 'User not found' });
   }
+  
+  // Background-sync any missing Google Meet links now that the host is logged in/online
+  syncMissingMeetLinks(user.id);
   
   // exclude password
   const { password, ...safeUser } = user;

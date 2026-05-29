@@ -101,4 +101,33 @@ export class BookingService {
       })
     );
   }
+
+  /**
+   * Get public booking details by ID as a guest
+   */
+  getPublicBooking(id: string): Observable<{ data: BookingResponse }> {
+    return this.http.get<{ data: BookingResponse }>(
+      `${this.apiUrl}/bookings/public/${id}`
+    ).pipe(
+      catchError(error => {
+        console.error('Error fetching public booking details:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  /**
+   * Cancel a booking as a guest (public)
+   */
+  publicCancelBooking(id: string): Observable<{ data: BookingResponse }> {
+    return this.http.post<{ data: BookingResponse }>(
+      `${this.apiUrl}/bookings/public/cancel/${id}`,
+      {}
+    ).pipe(
+      catchError(error => {
+        console.error('Error public cancelling booking:', error);
+        return throwError(() => error);
+      })
+    );
+  }
 }

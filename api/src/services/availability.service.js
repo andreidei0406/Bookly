@@ -109,9 +109,14 @@ export async function clearBlocks(userId, query) {
   const { startDate, endDate } = query;
   const where = { userId };
   if (startDate && endDate) {
+    const start = new Date(startDate);
+    start.setUTCHours(0, 0, 0, 0);
+    const end = new Date(endDate);
+    end.setUTCHours(23, 59, 59, 999);
+
     where.date = {
-      gte: new Date(startDate),
-      lt: new Date(endDate)
+      gte: start,
+      lte: end
     };
   }
   

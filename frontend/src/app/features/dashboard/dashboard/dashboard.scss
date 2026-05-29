@@ -2,3 +2,233 @@
   display: block;
   height: 100vh;
 }
+
+::ng-deep {
+  /* Ultra-Premium FullCalendar Layout Overrides */
+  .fc {
+    --fc-border-color: rgba(226, 232, 240, 0.8);
+    --fc-today-bg-color: rgba(124, 58, 237, 0.04);
+    --fc-now-indicator-color: #7c3aed;
+    font-family: inherit;
+  }
+
+  /* Clean up borders & slots */
+  .fc-theme-standard td, 
+  .fc-theme-standard th,
+  .fc-theme-standard .fc-scrollgrid {
+    border-color: rgba(226, 232, 240, 0.8) !important;
+  }
+
+  /* Make header elements look premium */
+  .fc-col-header-cell {
+    background-color: rgba(248, 250, 252, 0.5);
+    padding: 12px 0 !important;
+  }
+
+  .fc-col-header-cell-cushion {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    text-decoration: none !important;
+  }
+
+  .fc-day-today .fc-col-header-cell-cushion {
+    color: #7c3aed !important;
+  }
+
+  /* Style the toolbar header */
+  .fc-header-toolbar {
+    margin-bottom: 1.5rem !important;
+    padding: 0.25rem 0;
+  }
+
+  .fc-toolbar-title {
+    font-size: 1.25rem !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.025em;
+    color: #0f172a;
+  }
+
+  /* Style all FullCalendar buttons to match premium custom tailwind */
+  .fc-button {
+    background-color: #ffffff !important;
+    border: 1px solid rgba(226, 232, 240, 0.8) !important;
+    color: #475569 !important;
+    font-weight: 500 !important;
+    font-size: 0.875rem !important;
+    padding: 0.5rem 1rem !important;
+    border-radius: 0.5rem !important;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+    transition: all 0.2s ease-in-out !important;
+    text-transform: capitalize !important;
+
+    &:hover {
+      background-color: #f8fafc !important;
+      color: #0f172a !important;
+      border-color: #cbd5e1 !important;
+    }
+
+    &:focus {
+      box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.2) !important;
+    }
+
+    &.fc-button-active {
+      background-color: #7c3aed !important;
+      border-color: #7c3aed !important;
+      color: #ffffff !important;
+      font-weight: 600 !important;
+
+      &:hover {
+        background-color: #6d28d9 !important;
+        border-color: #6d28d9 !important;
+        color: #ffffff !important;
+      }
+    }
+
+    &.fc-today-button {
+      font-weight: 600 !important;
+      background-color: rgba(124, 58, 237, 0.05) !important;
+      border-color: rgba(124, 58, 237, 0.2) !important;
+      color: #7c3aed !important;
+
+      &:hover {
+        background-color: rgba(124, 58, 237, 0.1) !important;
+        color: #6d28d9 !important;
+      }
+
+      &:disabled {
+        background-color: #f1f5f9 !important;
+        border-color: #e2e8f0 !important;
+        color: #94a3b8 !important;
+        opacity: 0.6;
+      }
+    }
+  }
+
+  .fc-button-group {
+    gap: 4px;
+    
+    .fc-button {
+      border-radius: 0.5rem !important;
+    }
+  }
+
+  /* Style events beautifully */
+  .fc-v-event {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03) !important;
+    border-radius: 8px !important;
+    padding: 3px !important;
+  }
+
+  /* Make timegrid slots taller and more comfortable */
+  .fc-timegrid-slot {
+    height: 32px !important; /* Comfortably spacious row height */
+  }
+
+  /* Hide the redundant time label inside event cards to free up vertical space */
+  .fc-event-time {
+    display: none !important;
+  }
+
+  /* Force event title to be fully visible and wrap instead of clipping */
+  .fc-timegrid-event {
+    overflow: visible !important;
+  }
+  
+  .fc-event-main {
+    overflow: visible !important;
+    white-space: normal !important; /* Allow wrapping */
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important; /* Vertically center the title */
+    height: 100% !important;
+    padding: 4px 8px !important;
+  }
+
+  .fc-event-title {
+    font-size: 0.85rem !important;
+    font-weight: 700 !important;
+    display: block !important;
+    white-space: normal !important;
+    word-break: break-word !important; /* Wrap long names/words */
+    line-height: 1.25 !important;
+  }
+
+  /* Saved Available event blocks style */
+  .available-event {
+    background-color: #2563eb !important; /* Solid premium blue-600 */
+    border: 1px solid #1d4ed8 !important;
+    border-left: 4px solid #1e40af !important;
+    color: #ffffff !important;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background-color: #1d4ed8 !important;
+      border-color: #1e40af !important;
+    }
+    
+    .fc-event-main, .fc-event-title {
+      font-weight: 700 !important;
+      font-size: 0.85rem !important;
+      color: #ffffff !important;
+    }
+  }
+
+  /* Unsaved Available event blocks style */
+  .unsaved-event {
+    background-color: #60a5fa !important; /* Solid lighter blue-400 */
+    border: 1px dashed #2563eb !important;
+    border-left: 4px solid #3b82f6 !important;
+    color: #ffffff !important;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background-color: #3b82f6 !important;
+    }
+
+    .fc-event-main, .fc-event-title {
+      font-weight: 600 !important;
+      font-size: 0.85rem !important;
+      color: #ffffff !important;
+    }
+  }
+
+  /* Drag-selection highlight preview */
+  .fc-highlight {
+    background: rgba(37, 99, 235, 0.25) !important; /* Semi-transparent blue-600 */
+  }
+
+  /* Bookings confirmed blocks style */
+  .booked-event {
+    background-color: #10b981 !important;
+    border: 1px solid #059669 !important;
+    border-left: 4px solid #047857 !important;
+    color: #ffffff !important;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background-color: #059669 !important;
+      border-color: #047857 !important;
+    }
+
+    .fc-event-main, .fc-event-title {
+      font-weight: 700 !important;
+      font-size: 0.85rem !important;
+      color: #ffffff !important;
+    }
+  }
+
+  /* Time labels styling */
+  .fc-timegrid-slot-label-cushion {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #64748b;
+  }
+
+  /* Remove default event dots on month view */
+  .fc-daygrid-event-dot {
+    display: none !important;
+  }
+}

@@ -22,6 +22,20 @@ router.post(
   bookingController.publicCreate
 );
 
+/**
+ * @route GET /api/v1/bookings/public/:id
+ * @desc Get a single booking by ID as a guest
+ * @access Public
+ */
+router.get('/public/:id', bookingController.findPublicById);
+
+/**
+ * @route POST /api/v1/bookings/public/cancel/:id
+ * @desc Cancel a booking on guest behalf
+ * @access Public
+ */
+router.post('/public/cancel/:id', bookingController.publicCancel);
+
 // All subsequent booking routes require authentication
 router.use(authenticate);
 

@@ -65,3 +65,21 @@ export const reschedule = catchAsync(async (req, res) => {
   const result = await bookingService.reschedule(req.params.id, req.body);
   return success(res, { data: result });
 });
+
+/**
+ * Get a single booking by ID as a guest.
+ * @route GET /api/v1/bookings/public/:id
+ */
+export const findPublicById = catchAsync(async (req, res) => {
+  const result = await bookingService.findById(req.params.id);
+  return success(res, { data: result });
+});
+
+/**
+ * Cancel a booking as a guest.
+ * @route POST /api/v1/bookings/public/cancel/:id
+ */
+export const publicCancel = catchAsync(async (req, res) => {
+  const result = await bookingService.publicCancel(req.params.id);
+  return success(res, { data: result });
+});

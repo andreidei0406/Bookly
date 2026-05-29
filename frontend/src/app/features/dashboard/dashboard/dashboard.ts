@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, computed, ViewChild, ElementRef, inject } from '@angular/core';
+import { Component, OnInit, signal, computed, ViewChild, ElementRef, inject, ChangeDetectorRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FullCalendarModule, FullCalendarComponent } from '@fullcalendar/angular';
@@ -35,6 +35,8 @@ export class Dashboard implements OnInit {
   private bookingService = inject(BookingService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private cdr = inject(ChangeDetectorRef);
+  private ngZone = inject(NgZone);
 
   activeView = signal<DashboardTab>('calendar');
   currentDate = signal(new Date());
@@ -72,6 +74,7 @@ export class Dashboard implements OnInit {
   calendarOptions: CalendarOptions = {
     plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
     initialView: 'timeGridWeek',
+    height: '100%',
     headerToolbar: {
       left: 'prev,next today',
       center: 'title',
@@ -111,164 +114,182 @@ export class Dashboard implements OnInit {
     
     this.isFetching.set(true);
 
-    zip(
-      this.availabilityService.getBlocks(info.startStr, info.endStr),
-      this.integrationService.getGoogleEvents(info.startStr, info.endStr).pipe(
-        catchError(() => from([{ data: [] }]))
-      ),
-      this.bookingService.getHostBookings('CONFIRMED').pipe(
-        catchError(() => from([{ data: [] }]))
-      )
-    ).subscribe({
-      next: ([blocksRes, googleRes, bookingsRes]: [any, any, any]) => {
-        const events = [];
-        
-        if (blocksRes.data) {
-          events.push(...blocksRes.data.map((block: any) => ({
-            id: block.id,
-            title: 'Available',
-            start: `${block.date.split('T')[0]}T${block.startTime}:00`,
-            end: `${block.date.split('T')[0]}T${block.endTime}:00`,
-            backgroundColor: '#3b82f6',
-            borderColor: '#2563eb',
-            classNames: ['cursor-pointer'],
-            extendedProps: { status: 'available', type: 'block' }
-          })));
-        }
-        
-        if (googleRes.data) {
-          events.push(...googleRes.data.map((ge: any) => ({
-            id: ge.id,
-            title: ge.title,
-            start: ge.start,
-            end: ge.end,
-            textColor: '#b91c1c',
-            editable: false,
-            classNames: ['google-calendar-event', 'cursor-pointer'],
-            extendedProps: { status: 'busy', type: 'google' }
-          })));
-        }
+    this.ngZone.run(() => {
+      zip(
+        this.availabilityService.getBlocks(info.startStr, info.endStr),
+        this.integrationService.getGoogleEvents(info.startStr, info.endStr).pipe(
+          catchError(() => from([{ data: [] }]))
+        ),
+        this.bookingService.getHostBookings('CONFIRMED').pipe(
+          catchError(() => from([{ data: [] }]))
+        )
+      ).subscribe({
+        next: ([blocksRes, googleRes, bookingsRes]: [any, any, any]) => {
+          const events = [];
+          
+          if (blocksRes.data) {
+            events.push(...blocksRes.data.map((block: any) => ({
+              id: block.id,
+              title: 'Available',
+              start: `${block.date.split('T')[0]}T${block.startTime}:00`,
+              end: `${block.date.split('T')[0]}T${block.endTime}:00`,
+              classNames: ['cursor-pointer', 'available-event'],
+              extendedProps: { status: 'available', type: 'block' }
+            })));
+          }
 
-        if (bookingsRes.data) {
-          events.push(...bookingsRes.data.map((booking: any) => ({
-            id: booking.id,
-            title: `Booking: ${booking.guestName}`,
-            start: `${booking.date.split('T')[0]}T${booking.startTime}:00`,
-            end: `${booking.date.split('T')[0]}T${booking.endTime}:00`,
-            backgroundColor: '#10b981', // green-500
-            borderColor: '#059669', // green-600
-            textColor: '#ffffff',
-            editable: false,
-            classNames: ['cursor-pointer'],
-            extendedProps: { status: 'booked', type: 'booking', booking }
+          // Extract googleEventIds from host bookings to prevent duplicate displaying of bookings
+          const bookedGoogleEventIds = new Set<string>();
+          if (bookingsRes.data) {
+            bookingsRes.data.forEach((booking: any) => {
+              if (booking.googleEventId) {
+                bookedGoogleEventIds.add(booking.googleEventId);
+              }
+            });
+          }
+          
+          if (googleRes.data) {
+            // Filter out Google Calendar events that correspond to Bookly bookings
+            const filteredGoogleEvents = googleRes.data.filter((ge: any) => !bookedGoogleEventIds.has(ge.id));
+            events.push(...filteredGoogleEvents.map((ge: any) => ({
+              id: ge.id,
+              title: ge.title,
+              start: ge.start,
+              end: ge.end,
+              editable: false,
+              classNames: ['google-calendar-event', 'cursor-pointer'],
+              extendedProps: { status: 'busy', type: 'google' }
+            })));
+          }
+
+          if (bookingsRes.data) {
+            events.push(...bookingsRes.data.map((booking: any) => ({
+              id: booking.id,
+              title: booking.guestName,
+              start: `${booking.date.split('T')[0]}T${booking.startTime}:00`,
+              end: `${booking.date.split('T')[0]}T${booking.endTime}:00`,
+              editable: false,
+              classNames: ['cursor-pointer', 'booked-event'],
+              extendedProps: { status: 'booked', type: 'booking', booking }
+            })));
+          }
+          
+          // Also add any unsaved blocks
+          const unsaved = this.unsavedBlocks();
+          events.push(...unsaved.map(block => ({
+            id: block.id,
+            title: 'Unsaved Slot',
+            start: `${block.date}T${block.startTime}:00`,
+            end: `${block.date}T${block.endTime}:00`,
+            classNames: ['cursor-pointer', 'unsaved-event'],
+            extendedProps: { status: 'unsaved', type: 'block' }
           })));
+          
+          successCallback(events);
+          this.isFetching.set(false);
+          this.cdr.detectChanges();
+        },
+        error: (err) => {
+          console.error('Failed to load events', err);
+          failureCallback(err);
+          this.isFetching.set(false);
+          this.cdr.detectChanges();
         }
-        
-        // Also add any unsaved blocks
-        const unsaved = this.unsavedBlocks();
-        events.push(...unsaved.map(block => ({
-          id: block.id,
-          title: 'Unsaved Slot',
-          start: `${block.date}T${block.startTime}:00`,
-          end: `${block.date}T${block.endTime}:00`,
-          backgroundColor: '#93c5fd',
-          borderColor: '#60a5fa',
-          classNames: ['cursor-pointer'],
-          extendedProps: { status: 'unsaved', type: 'block' }
-        })));
-        
-        successCallback(events);
-        this.isFetching.set(false);
-      },
-      error: (err) => {
-        console.error('Failed to load events', err);
-        failureCallback(err);
-        this.isFetching.set(false);
-      }
+      });
     });
   }
 
   handleDateSelect(selectInfo: any) {
-    const calendarApi = selectInfo.view.calendar;
-    calendarApi.unselect(); // clear date selection
+    this.ngZone.run(() => {
+      const calendarApi = selectInfo.view.calendar;
+      calendarApi.unselect(); // clear date selection
 
-    if (!selectInfo.startStr.includes('T') || !selectInfo.endStr.includes('T')) {
-      console.warn('All-day selection not supported for availability blocks');
-      return;
-    }
+      if (!selectInfo.startStr.includes('T') || !selectInfo.endStr.includes('T')) {
+        console.warn('All-day selection not supported for availability blocks');
+        return;
+      }
 
-    const date = selectInfo.startStr.split('T')[0];
-    const startTime = selectInfo.startStr.split('T')[1].substring(0, 5);
-    const endTime = selectInfo.endStr.split('T')[1].substring(0, 5);
+      const date = selectInfo.startStr.split('T')[0];
+      const startTime = selectInfo.startStr.split('T')[1].substring(0, 5);
+      const endTime = selectInfo.endStr.split('T')[1].substring(0, 5);
 
-    const id = `temp-${Date.now()}`;
-    
-    calendarApi.addEvent({
-      id,
-      title: 'Unsaved Slot',
-      start: selectInfo.startStr,
-      end: selectInfo.endStr,
-      backgroundColor: '#93c5fd',
-      borderColor: '#60a5fa',
-      classNames: ['cursor-pointer'],
-      extendedProps: { status: 'unsaved', type: 'block' }
+      const id = `temp-${Date.now()}`;
+      
+      calendarApi.addEvent({
+        id,
+        title: 'Unsaved Slot',
+        start: selectInfo.startStr,
+        end: selectInfo.endStr,
+        classNames: ['cursor-pointer', 'unsaved-event'],
+        extendedProps: { status: 'unsaved', type: 'block' }
+      });
+
+      this.unsavedBlocks.update(blocks => [...blocks, { id, date, startTime, endTime, action: 'create' }]);
+      this.cdr.detectChanges();
     });
-
-    this.unsavedBlocks.update(blocks => [...blocks, { id, date, startTime, endTime, action: 'create' }]);
   }
 
   handleEventClick(clickInfo: EventClickArg) {
-    const event = clickInfo.event;
-    this.selectedEvent.set({
-      id: event.id,
-      title: event.title,
-      start: event.startStr,
-      end: event.endStr,
-      extendedProps: event.extendedProps
+    this.ngZone.run(() => {
+      const event = clickInfo.event;
+      this.selectedEvent.set({
+        id: event.id,
+        title: event.title,
+        start: event.startStr,
+        end: event.endStr,
+        extendedProps: event.extendedProps
+      });
+      this.cdr.detectChanges();
     });
   }
 
   handleEventDrop(dropInfo: any) {
-    const event = dropInfo.event;
-    if (event.extendedProps['status'] === 'busy') {
-      dropInfo.revert();
-      return;
-    }
-    
-    const id = event.id;
-    const date = dropInfo.event.startStr.split('T')[0];
-    const startTime = dropInfo.event.startStr.split('T')[1].substring(0, 5);
-    const endTime = dropInfo.event.endStr.split('T')[1].substring(0, 5);
-    
-    this.unsavedBlocks.update(blocks => {
-      const existing = blocks.find(b => b.id === id);
-      if (existing) {
-        return blocks.map(b => b.id === id ? { ...b, date, startTime, endTime } : b);
-      } else {
-        return [...blocks, { id, date, startTime, endTime, action: 'update' }];
+    this.ngZone.run(() => {
+      const event = dropInfo.event;
+      if (event.extendedProps['status'] === 'busy') {
+        dropInfo.revert();
+        return;
       }
+      
+      const id = event.id;
+      const date = dropInfo.event.startStr.split('T')[0];
+      const startTime = dropInfo.event.startStr.split('T')[1].substring(0, 5);
+      const endTime = dropInfo.event.endStr.split('T')[1].substring(0, 5);
+      
+      this.unsavedBlocks.update(blocks => {
+        const existing = blocks.find(b => b.id === id);
+        if (existing) {
+          return blocks.map(b => b.id === id ? { ...b, date, startTime, endTime } : b);
+        } else {
+          return [...blocks, { id, date, startTime, endTime, action: 'update' }];
+        }
+      });
+      this.cdr.detectChanges();
     });
   }
 
   handleEventResize(resizeInfo: any) {
-    const event = resizeInfo.event;
-    if (event.extendedProps['status'] === 'busy') {
-      resizeInfo.revert();
-      return;
-    }
-    
-    const id = event.id;
-    const date = resizeInfo.event.startStr.split('T')[0];
-    const startTime = resizeInfo.event.startStr.split('T')[1].substring(0, 5);
-    const endTime = resizeInfo.event.endStr.split('T')[1].substring(0, 5);
-    
-    this.unsavedBlocks.update(blocks => {
-      const existing = blocks.find(b => b.id === id);
-      if (existing) {
-        return blocks.map(b => b.id === id ? { ...b, date, startTime, endTime } : b);
-      } else {
-        return [...blocks, { id, date, startTime, endTime, action: 'update' }];
+    this.ngZone.run(() => {
+      const event = resizeInfo.event;
+      if (event.extendedProps['status'] === 'busy') {
+        resizeInfo.revert();
+        return;
       }
+      
+      const id = event.id;
+      const date = resizeInfo.event.startStr.split('T')[0];
+      const startTime = resizeInfo.event.startStr.split('T')[1].substring(0, 5);
+      const endTime = resizeInfo.event.endStr.split('T')[1].substring(0, 5);
+      
+      this.unsavedBlocks.update(blocks => {
+        const existing = blocks.find(b => b.id === id);
+        if (existing) {
+          return blocks.map(b => b.id === id ? { ...b, date, startTime, endTime } : b);
+        } else {
+          return [...blocks, { id, date, startTime, endTime, action: 'update' }];
+        }
+      });
+      this.cdr.detectChanges();
     });
   }
 
@@ -299,11 +320,16 @@ export class Dashboard implements OnInit {
           }
         });
         this.unsavedBlocks.set([]);
+        calendarApi.removeAllEvents();
         calendarApi.refetchEvents();
+        calendarApi.render();
+        this.calendarOptions = { ...this.calendarOptions };
+        this.cdr.detectChanges();
       },
       error: (err) => {
         console.error('Failed to save blocks', err);
         this.isSaving.set(false);
+        this.cdr.detectChanges();
       }
     });
   }
@@ -318,7 +344,11 @@ export class Dashboard implements OnInit {
       }
     });
     this.unsavedBlocks.set([]);
+    calendarApi.removeAllEvents();
     calendarApi.refetchEvents();
+    calendarApi.render();
+    this.calendarOptions = { ...this.calendarOptions };
+    this.cdr.detectChanges();
   }
 
   clearAvailability() {
@@ -327,17 +357,29 @@ export class Dashboard implements OnInit {
     
     if (confirm('Are you sure you want to clear all availability in this view?')) {
       this.isFetching.set(true);
-      const startStr = info.activeStart.toISOString().split('T')[0];
-      const endStr = info.activeEnd.toISOString().split('T')[0];
+      const startStr = info.activeStart.toLocaleDateString('sv-SE');
+      const endStr = info.activeEnd.toLocaleDateString('sv-SE');
       
       this.availabilityService.clearBlocks(startStr, endStr).subscribe({
         next: () => {
+          // Remove manually added temp events from calendar
+          this.unsavedBlocks().forEach(block => {
+            if (block.action === 'create' || block.id.startsWith('temp-')) {
+              const ev = calendarApi.getEventById(block.id);
+              if (ev) ev.remove();
+            }
+          });
           this.unsavedBlocks.set([]);
+          calendarApi.removeAllEvents();
           calendarApi.refetchEvents();
+          calendarApi.render();
+          this.calendarOptions = { ...this.calendarOptions };
+          this.cdr.detectChanges();
         },
         error: (err) => {
           console.error('Failed to clear blocks', err);
           this.isFetching.set(false);
+          this.cdr.detectChanges();
         }
       });
     }
@@ -360,18 +402,30 @@ export class Dashboard implements OnInit {
       const ev = calendarApi.getEventById(event.id);
       if (ev) ev.remove();
       this.unsavedBlocks.update(blocks => blocks.filter(b => b.id !== event.id));
+      calendarApi.removeAllEvents();
       calendarApi.refetchEvents();
+      calendarApi.render();
+      this.calendarOptions = { ...this.calendarOptions };
       this.closeEventDialog();
+      this.cdr.detectChanges();
       return;
     }
 
     if (confirm('Delete this availability block?')) {
       this.availabilityService.deleteBlock(event.id).subscribe({
         next: () => {
-          this.calendarComponent.getApi().refetchEvents();
+          const calendarApi = this.calendarComponent.getApi();
+          calendarApi.removeAllEvents();
+          calendarApi.refetchEvents();
+          calendarApi.render();
+          this.calendarOptions = { ...this.calendarOptions };
           this.closeEventDialog();
+          this.cdr.detectChanges();
         },
-        error: (err) => console.error('Failed to delete block', err)
+        error: (err) => {
+          console.error('Failed to delete block', err);
+          this.cdr.detectChanges();
+        }
       });
     }
   }
