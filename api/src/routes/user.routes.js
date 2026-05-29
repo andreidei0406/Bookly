@@ -12,6 +12,40 @@ import { availableSlotsSchema } from '../validators/availability.validator.js';
 
 const router = Router();
 
+// Private routes (defined first to prevent wildcard shadowing)
+/**
+ * @route GET /api/v1/users/me
+ * @desc Get the authenticated user's profile
+ * @access Private
+ */
+router.get('/me', authenticate, userController.getProfile);
+
+/**
+ * @route PATCH /api/v1/users/me
+ * @desc Update the authenticated user's profile
+ * @access Private
+ */
+router.patch('/me', authenticate, validate(updateProfileSchema), userController.updateProfile);
+
+/**
+ * @route PATCH /api/v1/users/me/password
+ * @desc Change the authenticated user's password
+ * @access Private
+ */
+router.patch(
+  '/me/password',
+  authenticate,
+  validate(changePasswordSchema),
+  userController.changePassword
+);
+
+/**
+ * @route GET /api/v1/users
+ * @desc List all users (SUPER_ADMIN only)
+ * @access Private (SUPER_ADMIN)
+ */
+router.get('/', authenticate, requirePlatformRole('SUPER_ADMIN'), userController.listUsers);
+
 // Public routes
 /**
  * @route GET /api/v1/users/:username
@@ -40,40 +74,5 @@ router.get(
   '/:username/availability/days',
   availabilityController.getAvailableDays
 );
-
-// Private routes below
-router.use(authenticate);
-
-/**
- * @route GET /api/v1/users/me
- * @desc Get the authenticated user's profile
- * @access Private
- */
-router.get('/me', userController.getProfile);
-
-/**
- * @route PATCH /api/v1/users/me
- * @desc Update the authenticated user's profile
- * @access Private
- */
-router.patch('/me', validate(updateProfileSchema), userController.updateProfile);
-
-/**
- * @route PATCH /api/v1/users/me/password
- * @desc Change the authenticated user's password
- * @access Private
- */
-router.patch(
-  '/me/password',
-  validate(changePasswordSchema),
-  userController.changePassword
-);
-
-/**
- * @route GET /api/v1/users
- * @desc List all users (SUPER_ADMIN only)
- * @access Private (SUPER_ADMIN)
- */
-router.get('/', requirePlatformRole('SUPER_ADMIN'), userController.listUsers);
 
 export default router;
