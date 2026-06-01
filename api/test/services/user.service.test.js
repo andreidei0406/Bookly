@@ -30,7 +30,6 @@ import {
   getProfile,
   updateProfile,
   changePassword,
-  listUsers,
 } from '../../src/services/user.service.js';
 
 const USER_SELECT_SAFE = {
@@ -328,96 +327,4 @@ describe('changePassword', () => {
   });
 });
 
-// ─── listUsers ───────────────────────────────────────────────────────
-describe('listUsers', () => {
-  it('should return users with default pagination (page=1, limit=20)', async () => {
-    const users = [makeFakeUser(), makeFakeUser({ id: 'user-2', username: 'jane' })];
-    prisma.user.findMany.mockResolvedValue(users);
-    prisma.user.count.mockResolvedValue(2);
 
-    const result = await listUsers();
-
-    expect(prisma.user.findMany).toHaveBeenCalledWith({
-      skip: 0,
-      take: 20,
-      select: USER_SELECT_SAFE,
-      orderBy: { createdAt: 'desc' },
-    });
-    expect(prisma.user.count).toHaveBeenCalled();
-    expect(result).toEqual({
-      data: users,
-      meta: { total: 2, page: 1, limit: 20, totalPages: 1 },
-    });
-  });
-
-  it('should handle custom pagination parameters', async () => {
-    const users = [makeFakeUser()];
-    prisma.user.findMany.mockResolvedValue(users);
-    prisma.user.count.mockResolvedValue(50);
-
-    const result = await listUsers({ page: 3, limit: 10 });
-
-    expect(prisma.user.findMany).toHaveBeenCalledWith({
-      skip: 20,
-      take: 10,
-      select: USER_SELECT_SAFE,
-      orderBy: { createdAt: 'desc' },
-    });
-    expect(result).toEqual({
-      data: users,
-      meta: { total: 50, page: 3, limit: 10, totalPages: 5 },
-    });
-  });
-
-  it('should return empty data array when no users exist', async () => {
-    prisma.user.findMany.mockResolvedValue([]);
-    prisma.user.count.mockResolvedValue(0);
-
-    const result = await listUsers();
-
-    expect(result).toEqual({
-      data: [],
-      meta: { total: 0, page: 1, limit: 20, totalPages: 0 },
-    });
-  });
-
-  it('should calculate totalPages correctly with non-even division', async () => {
-    prisma.user.findMany.mockResolvedValue([makeFakeUser()]);
-    prisma.user.count.mockResolvedValue(21);
-
-    const result = await listUsers({ page: 1, limit: 10 });
-
-    expect(result.meta.totalPages).toBe(3); // Math.ceil(21/10) = 3
-  });
-
-  it('should use page 1 and limit 20 when called with an empty object', async () => {
-    prisma.user.findMany.mockResolvedValue([]);
-    prisma.user.count.mockResolvedValue(0);
-
-    await listUsers({});
-
-    expect(prisma.user.findMany).toHaveBeenCalledWith({
-      skip: 0,
-      take: 20,
-      select: USER_SELECT_SAFE,
-      orderBy: { createdAt: 'desc' },
-    });
-  });
-
-  it('should calculate correct skip for page 2 with limit 5', async () => {
-    prisma.user.findMany.mockResolvedValue([]);
-    prisma.user.count.mockResolvedValue(12);
-
-    const result = await listUsers({ page: 2, limit: 5 });
-
-    expect(prisma.user.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ skip: 5, take: 5 }),
-    );
-    expect(result.meta).toEqual({
-      total: 12,
-      page: 2,
-      limit: 5,
-      totalPages: 3, // Math.ceil(12/5)
-    });
-  });
-});

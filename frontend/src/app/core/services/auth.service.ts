@@ -10,7 +10,6 @@ export interface User {
   username: string;
   firstName: string;
   lastName: string;
-  platformRole: string;
   googleId?: string;
   googleAccessToken?: string;
   plan?: string;

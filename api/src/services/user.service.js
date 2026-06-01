@@ -130,33 +130,4 @@ export async function changePassword(userId, { currentPassword, newPassword }) {
   logger.info(`Password changed for user: ${userId}`);
 }
 
-/**
- * List all users with pagination (SUPER_ADMIN only).
- * @param {object} params
- * @param {number} [params.page=1] - Page number.
- * @param {number} [params.limit=20] - Items per page.
- * @returns {Promise<{data: object[], meta: object}>} Paginated user list.
- */
-export async function listUsers({ page = 1, limit = 20 } = {}) {
-  const skip = (page - 1) * limit;
 
-  const [users, total] = await Promise.all([
-    prisma.user.findMany({
-      skip,
-      take: limit,
-      select: USER_SELECT_SAFE,
-      orderBy: { createdAt: 'desc' },
-    }),
-    prisma.user.count(),
-  ]);
-
-  return {
-    data: users,
-    meta: {
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-    },
-  };
-}

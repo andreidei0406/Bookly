@@ -19,7 +19,6 @@ describe('BookingPage', () => {
         username: 'testuser',
         firstName: 'Host',
         lastName: 'User',
-        platformRole: 'USER',
         plan: 'FREE'
       }
     }),

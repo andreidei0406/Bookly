@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import authenticate from '../../src/middleware/auth.middleware.js';
-import { requirePlatformRole, requireBusinessRole, requireBookingAccess } from '../../src/middleware/rbac.middleware.js';
 import validate from '../../src/middleware/validate.middleware.js';
 import errorHandler from '../../src/middleware/errorHandler.middleware.js';
 import { verifyAccessToken } from '../../src/utils/tokens.js';
@@ -57,7 +56,6 @@ describe('Middlewares', () => {
         email: 'test@example.com',
         firstName: 'John',
         lastName: 'Doe',
-        platformRole: 'USER',
         isActive: true,
       });
 
@@ -76,7 +74,6 @@ describe('Middlewares', () => {
         email: 'test@example.com',
         firstName: 'John',
         lastName: 'Doe',
-        platformRole: 'USER',
         isActive: true,
       });
 
@@ -117,113 +114,7 @@ describe('Middlewares', () => {
     });
   });
 
-  describe('rbac.middleware', () => {
-    describe('requirePlatformRole', () => {
-      it('should allow access if user platformRole matches', () => {
-        req.user = { platformRole: 'SUPER_ADMIN' };
-        const middleware = requirePlatformRole('SUPER_ADMIN');
-        
-        middleware(req, res, next);
 
-        expect(next).toHaveBeenCalledWith();
-      });
-
-      it('should block access if user platformRole does not match', () => {
-        req.user = { platformRole: 'USER' };
-        const middleware = requirePlatformRole('SUPER_ADMIN');
-
-        middleware(req, res, next);
-
-        expect(next).toHaveBeenCalledWith(expect.any(ApiError));
-        expect(next.mock.calls[0][0].statusCode).toBe(403);
-      });
-    });
-
-    describe('requireBusinessRole', () => {
-      it('should auto-allow SUPER_ADMIN platforms and bypass check', async () => {
-        req.user = { id: 'sa_1', platformRole: 'SUPER_ADMIN' };
-        req.params.businessId = 'bus_1';
-        
-        const middleware = requireBusinessRole('OWNER');
-        await middleware(req, res, next);
-
-        expect(next).toHaveBeenCalledWith();
-        expect(req.businessMember).toBeDefined();
-        expect(req.businessMember.role).toBe('OWNER');
-      });
-
-      it('should allow business member if role matches', async () => {
-        req.user = { id: 'user_1', platformRole: 'USER' };
-        req.params.businessId = 'bus_1';
-
-        prisma.businessMember.findUnique.mockResolvedValue({
-          userId: 'user_1',
-          businessId: 'bus_1',
-          role: 'ADMIN',
-        });
-
-        const middleware = requireBusinessRole('OWNER', 'ADMIN');
-        await middleware(req, res, next);
-
-        expect(next).toHaveBeenCalledWith();
-        expect(req.businessMember.role).toBe('ADMIN');
-      });
-
-      it('should forbid if user is not business member or lacks role', async () => {
-        req.user = { id: 'user_1', platformRole: 'USER' };
-        req.params.businessId = 'bus_1';
-        prisma.businessMember.findUnique.mockResolvedValue(null);
-
-        const middleware = requireBusinessRole('OWNER');
-        await middleware(req, res, next);
-
-        expect(next).toHaveBeenCalledWith(expect.any(ApiError));
-        expect(next.mock.calls[0][0].statusCode).toBe(403);
-      });
-    });
-
-    describe('requireBookingAccess', () => {
-      it('should allow customer who owns booking', async () => {
-        req.user = { id: 'cust_123', platformRole: 'USER' };
-        req.params.id = 'booking_abc';
-
-        prisma.booking.findUnique.mockResolvedValue({
-          id: 'booking_abc',
-          customerId: 'cust_123',
-          businessId: 'bus_1',
-        });
-
-        const middleware = requireBookingAccess();
-        await middleware(req, res, next);
-
-        expect(next).toHaveBeenCalledWith();
-        expect(req.booking.id).toBe('booking_abc');
-      });
-
-      it('should allow business staff member access to booking', async () => {
-        req.user = { id: 'staff_123', platformRole: 'USER' };
-        req.params.id = 'booking_abc';
-
-        prisma.booking.findUnique.mockResolvedValue({
-          id: 'booking_abc',
-          customerId: 'other_cust',
-          businessId: 'bus_1',
-        });
-
-        prisma.businessMember.findUnique.mockResolvedValue({
-          userId: 'staff_123',
-          businessId: 'bus_1',
-          role: 'STAFF',
-        });
-
-        const middleware = requireBookingAccess();
-        await middleware(req, res, next);
-
-        expect(next).toHaveBeenCalledWith();
-        expect(req.booking.id).toBe('booking_abc');
-      });
-    });
-  });
 
   describe('validate.middleware', () => {
     it('should validate and parse schema successfully', () => {

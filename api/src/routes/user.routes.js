@@ -3,7 +3,6 @@ import * as userController from '../controllers/user.controller.js';
 import * as availabilityController from '../controllers/availability.controller.js';
 import validate from '../middleware/validate.middleware.js';
 import authenticate from '../middleware/auth.middleware.js';
-import { requirePlatformRole } from '../middleware/rbac.middleware.js';
 import {
   updateProfileSchema,
   changePasswordSchema,
@@ -38,13 +37,6 @@ router.patch(
   validate(changePasswordSchema),
   userController.changePassword
 );
-
-/**
- * @route GET /api/v1/users
- * @desc List all users (SUPER_ADMIN only)
- * @access Private (SUPER_ADMIN)
- */
-router.get('/', authenticate, requirePlatformRole('SUPER_ADMIN'), userController.listUsers);
 
 // Public routes
 /**

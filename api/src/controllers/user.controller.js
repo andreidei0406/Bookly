@@ -39,12 +39,3 @@ export const changePassword = catchAsync(async (req, res) => {
   return success(res, { message: 'Password changed successfully' });
 });
 
-/**
- * List all users (SUPER_ADMIN only).
- * @route GET /api/v1/users
- */
-export const listUsers = catchAsync(async (req, res) => {
-  const pagination = parsePagination(req.query);
-  const { data, meta } = await userService.listUsers(pagination);
-  return success(res, { data, meta });
-});

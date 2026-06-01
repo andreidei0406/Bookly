@@ -18,7 +18,6 @@ export const generateAccessToken = (user) => {
     sub: user.id,
     email: user.email,
     username: user.username,
-    platformRole: user.platformRole,
   };
   return jwt.sign(payload, config.jwt.accessSecret, {
     expiresIn: config.jwt.accessExpiry,

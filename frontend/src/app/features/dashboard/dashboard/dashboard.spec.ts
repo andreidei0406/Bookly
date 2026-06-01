@@ -21,7 +21,6 @@ describe('Dashboard', () => {
       username: 'testuser',
       firstName: 'Test',
       lastName: 'User',
-      platformRole: 'USER',
       plan: 'FREE'
     }),
     updateProfile: (data: any) => of({ data: {} }),

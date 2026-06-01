@@ -50,7 +50,6 @@ const authenticate = async (req, res, next) => {
         email: true,
         firstName: true,
         lastName: true,
-        platformRole: true,
         isActive: true,
         plan: true,
       },
@@ -70,7 +69,6 @@ const authenticate = async (req, res, next) => {
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
-      platformRole: user.platformRole,
       plan: user.plan,
     };
 

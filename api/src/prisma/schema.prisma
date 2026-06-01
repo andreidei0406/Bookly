@@ -6,11 +6,6 @@ datasource db {
   provider = "postgresql"
 }
 
-enum PlatformRole {
-  USER
-  SUPER_ADMIN
-}
-
 enum SubscriptionPlan {
   FREE
   PREMIUM
@@ -34,7 +29,6 @@ model User {
   lastName           String
   phone              String?
   avatar             String?
-  platformRole       PlatformRole     @default(USER)
   isActive           Boolean          @default(true)
   emailVerified      Boolean          @default(false)
   googleId           String?          @unique
