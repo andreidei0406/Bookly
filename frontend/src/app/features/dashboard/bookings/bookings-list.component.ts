@@ -77,9 +77,9 @@ import { AuthService } from '../../../core/services/auth.service';
               </div>
 
               <!-- Notes -->
-              <div *ngIf="booking.notes" class="mt-3 flex items-start gap-2 bg-muted/40 p-3 rounded-lg text-sm">
+              <div *ngIf="booking.notes" class="mt-3 flex items-start gap-2 bg-muted/40 p-3 rounded-lg text-sm w-full">
                 <svg class="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" /></svg>
-                <span class="text-muted-foreground">{{ booking.notes }}</span>
+                <span class="text-muted-foreground whitespace-pre-wrap break-words min-w-0 flex-1">{{ booking.notes }}</span>
               </div>
             </div>
 

@@ -191,7 +191,13 @@ export async function sendBookingCancellation(booking) {
   if (!customerEmail) {return;}
 
   const frontendUrl = config.cors.origin || 'http://localhost:4200';
-  const rebookUrl = booking.host?.username ? `${frontendUrl}/booking/${booking.host.username}` : `${frontendUrl}`;
+  let rebookUrl = frontendUrl;
+  if (booking.host?.username) {
+    rebookUrl = `${frontendUrl}/booking/${booking.host.username}?duration=${booking.duration || 30}`;
+    if (booking.meetingName) {
+      rebookUrl += `&meeting=${encodeURIComponent(booking.meetingName)}`;
+    }
+  }
 
   await sendEmail({
     to: customerEmail,

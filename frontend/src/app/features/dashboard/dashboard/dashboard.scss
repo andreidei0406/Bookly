@@ -232,3 +232,30 @@
     display: none !important;
   }
 }
+
+.custom-scrollbar {
+  --scrollbar-thumb: #cbd5e1; /* Neutral slate-300 */
+  --scrollbar-track: rgba(241, 245, 249, 0.5); /* Semi-transparent slate-100 */
+
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  scrollbar-width: thin;
+
+  /* Legacy fallback for WebKit/Blink browsers */
+  @supports not (scrollbar-color: auto) {
+    &::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: var(--scrollbar-thumb);
+      border-radius: 9999px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: var(--scrollbar-track);
+      border-radius: 9999px;
+    }
+  }
+}
+

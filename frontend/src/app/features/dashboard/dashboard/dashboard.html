@@ -75,11 +75,11 @@
     <!-- Header -->
     <header class="bg-card border-b border-border px-6 py-4 flex items-center justify-end shrink-0 shadow-sm z-10">
       <div class="relative">
-        <button (click)="toggleProfileDropdown()" class="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-sm font-bold shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+        <button (click)="toggleProfileDropdown()" class="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-sm font-bold shadow-sm hover:shadow-md transition-shadow cursor-pointer profile-trigger">
           {{ getUserInitials() }}
         </button>
         <!-- Mini dropdown -->
-        <div *ngIf="showProfileDropdown()" class="absolute right-0 top-12 bg-card rounded-xl shadow-lg border border-border py-2 w-48 z-50 animate-in fade-in zoom-in-95 duration-100">
+        <div *ngIf="showProfileDropdown()" class="absolute right-0 top-12 bg-card rounded-xl shadow-lg border border-border py-2 w-48 z-50 animate-in fade-in zoom-in-95 duration-100 profile-dropdown">
           <div class="px-4 py-2 border-b border-border">
             <p class="text-sm font-medium">{{ currentUser()?.firstName }} {{ currentUser()?.lastName }}</p>
             <p class="text-xs text-muted-foreground">{{ currentUser()?.email }}</p>
@@ -455,11 +455,15 @@
             </div>
 
             <!-- Notes -->
-            <div class="flex items-start gap-2" *ngIf="selectedEvent()?.extendedProps?.booking?.notes">
-              <svg class="w-4 h-4 mt-0.5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" /></svg>
-              <div>
+            <div class="flex items-start gap-2 w-full" *ngIf="selectedEvent()?.extendedProps?.booking?.notes">
+              <svg class="w-4 h-4 mt-0.5 text-muted-foreground shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" /></svg>
+              <div class="flex-1 min-w-0">
                 <p class="text-muted-foreground text-xs font-medium uppercase tracking-wider">Notes</p>
-                <p class="text-foreground whitespace-pre-wrap">{{ selectedEvent()?.extendedProps?.booking?.notes }}</p>
+                <div class="max-h-36 overflow-y-auto pr-1 custom-scrollbar">
+                  <p class="text-foreground whitespace-pre-wrap break-words leading-relaxed text-sm mt-0.5 pr-2">
+                    {{ selectedEvent()?.extendedProps?.booking?.notes }}
+                  </p>
+                </div>
               </div>
             </div>
 

@@ -1,5 +1,5 @@
-import { Component, inject } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Component, inject, OnInit } from '@angular/core';
+import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AuthService } from '../../../core/services/auth.service';
 import { CommonModule } from '@angular/common';
@@ -11,12 +11,22 @@ import { CommonModule } from '@angular/common';
   templateUrl: './register.html',
   styleUrl: './register.scss'
 })
-export class RegisterComponent {
+export class RegisterComponent implements OnInit {
   private authService = inject(AuthService);
   private fb = inject(FormBuilder);
+  private route = inject(ActivatedRoute);
   
   errorMsg = '';
   isSubmitting = false;
+
+  ngOnInit() {
+    this.route.queryParams.subscribe(params => {
+      if (params['email']) {
+        this.registerForm.patchValue({ email: params['email'] });
+      }
+    });
+  }
+
 
   registerForm = this.fb.group({
     firstName: ['', [Validators.required, Validators.minLength(1)]],

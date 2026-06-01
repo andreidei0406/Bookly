@@ -3,7 +3,7 @@ import catchAsync from '../utils/catchAsync.js';
 import * as authService from '../services/auth.service.js';
 import prisma from '../utils/prisma.js';
 import { syncMissingMeetLinks } from '../services/booking.service.js';
-import { verifyAccessToken } from '../utils/tokens.js';
+import { verifyAccessToken, verifyStateToken } from '../utils/tokens.js';
 
 /**
  * Register a new user account.
@@ -15,14 +15,15 @@ export const register = catchAsync(async (req, res) => {
   res.cookie('accessToken', result.accessToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    sameSite: 'lax',
     maxAge: 15 * 60 * 1000 // 15 minutes
   });
 
   res.cookie('refreshToken', result.refreshToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    sameSite: 'lax',
+    path: '/',
     maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
   });
 
@@ -39,14 +40,16 @@ export const login = catchAsync(async (req, res) => {
   res.cookie('accessToken', result.accessToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    sameSite: 'lax',
+    path: '/',
     maxAge: 15 * 60 * 1000 // 15 minutes
   });
 
   res.cookie('refreshToken', result.refreshToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    sameSite: 'lax',
+    path: '/',
     maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
   });
 
@@ -68,19 +71,22 @@ export const refreshToken = catchAsync(async (req, res) => {
   res.cookie('accessToken', result.accessToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    sameSite: 'lax',
+    path: '/',
     maxAge: 15 * 60 * 1000 // 15 minutes
   });
 
   res.cookie('refreshToken', result.refreshToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    sameSite: 'lax',
+    path: '/',
     maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
   });
 
   return success(res, { message: 'Tokens refreshed' });
 });
+
 
 /**
  * Logout the current user (invalidate refresh token).
@@ -120,16 +126,30 @@ export const googleCallback = catchAsync(async (req, res) => {
   const googleData = req.user;
   let currentUserId = null;
 
-  // Determine if the user is already logged in by verifying the accessToken cookie
-  const token = req.cookies?.accessToken;
-  if (token) {
+  // Determine if the user is already logged in by verifying the secure state token
+  const stateToken = req.oauthState || req.query?.state;
+  if (stateToken) {
     try {
-      const decoded = verifyAccessToken(token);
-      currentUserId = decoded.id;
-    } catch (err) {
-      // Ignore expired/invalid token cookie
+      const decoded = verifyStateToken(stateToken);
+      currentUserId = decoded.userId;
+    } catch {
+      // Ignore invalid/expired state token
     }
   }
+
+  // Fallback to cookie verification if state is not present or failed
+  if (!currentUserId) {
+    const token = req.cookies?.accessToken;
+    if (token) {
+      try {
+        const decoded = verifyAccessToken(token);
+        currentUserId = decoded.id;
+      } catch {
+        // Ignore expired/invalid token cookie
+      }
+    }
+  }
+
 
   const frontendUrl = process.env.CORS_ORIGIN || 'http://localhost:4200';
 
@@ -148,6 +168,7 @@ export const googleCallback = catchAsync(async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax', // Must be lax or none for OAuth redirect back
+      path: '/',
       maxAge: 15 * 60 * 1000 // 15 minutes
     });
 
@@ -155,6 +176,7 @@ export const googleCallback = catchAsync(async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
+      path: '/',
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
     

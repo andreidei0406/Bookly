@@ -124,7 +124,10 @@ export async function fetchCalendarEvents(user, startDate, endDate) {
 
     const events = response.data.items || [];
     
-    return events.map(item => ({
+    // Filter out transparent (Free) events so they do not block availability blocks
+    const busyEvents = events.filter(item => item.transparency !== 'transparent');
+    
+    return busyEvents.map(item => ({
       id: item.id,
       title: item.summary || 'Busy',
       start: item.start.dateTime || item.start.date,

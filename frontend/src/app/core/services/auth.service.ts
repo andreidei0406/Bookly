@@ -12,6 +12,7 @@ export interface User {
   lastName: string;
   platformRole: string;
   googleId?: string;
+  googleAccessToken?: string;
   plan?: string;
 }
 
@@ -85,7 +86,11 @@ export class AuthService {
   clearSession(redirectUrl: string = '/') {
     this.currentUser.set(null);
     this.isAuthenticated.set(false);
-    this.router.navigate([redirectUrl]);
+    
+    // Only redirect to landing page if currently inside the protected dashboard area
+    if (this.router.url.includes('/dashboard')) {
+      this.router.navigate([redirectUrl]);
+    }
   }
 
   refreshTokens() {

@@ -21,8 +21,14 @@ const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
  */
 export const createBookingSchema = {
   body: z.object({
-    guestName: z.string({ required_error: 'Guest name is required' }).trim(),
-    guestEmail: z.string({ required_error: 'Guest email is required' }).email(),
+    guestName: z
+      .string({ required_error: 'Guest name is required' })
+      .trim()
+      .max(50, 'Guest name cannot exceed 50 characters'),
+    guestEmail: z
+      .string({ required_error: 'Guest email is required' })
+      .email('Invalid email address')
+      .max(100, 'Guest email cannot exceed 100 characters'),
     meetingName: z
       .string({ required_error: 'Meeting name is required' })
       .trim()
@@ -34,7 +40,11 @@ export const createBookingSchema = {
     startTime: z
       .string({ required_error: 'Start time is required' })
       .regex(timeRegex, 'Start time must be in HH:mm format (24-hour)'),
-    notes: z.string().trim().optional(),
+    notes: z
+      .string()
+      .trim()
+      .max(500, 'Notes cannot exceed 500 characters')
+      .optional(),
     timezone: z.string().trim().optional(),
   }),
 };
@@ -46,8 +56,14 @@ export const createBookingSchema = {
 export const publicCreateBookingSchema = {
   body: z.object({
     hostUsername: z.string({ required_error: 'Host username is required' }),
-    guestName: z.string({ required_error: 'Guest name is required' }).trim(),
-    guestEmail: z.string({ required_error: 'Guest email is required' }).email('Invalid email address'),
+    guestName: z
+      .string({ required_error: 'Guest name is required' })
+      .trim()
+      .max(50, 'Guest name cannot exceed 50 characters'),
+    guestEmail: z
+      .string({ required_error: 'Guest email is required' })
+      .email('Invalid email address')
+      .max(100, 'Guest email cannot exceed 100 characters'),
     meetingName: z
       .string({ required_error: 'Meeting name is required' })
       .trim()
@@ -59,7 +75,11 @@ export const publicCreateBookingSchema = {
     startTime: z
       .string({ required_error: 'Start time is required' })
       .regex(timeRegex, 'Start time must be in HH:mm format (24-hour)'),
-    notes: z.string().trim().optional(),
+    notes: z
+      .string()
+      .trim()
+      .max(500, 'Notes cannot exceed 500 characters')
+      .optional(),
     timezone: z.string().trim().optional(),
   }),
 };

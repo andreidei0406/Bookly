@@ -345,7 +345,7 @@ describe('Auth Service', () => {
       });
     });
 
-    it('should unlink Google account from another user first if already in use', async () => {
+    it('should soft-link Google Calendar without stealing googleId or unlinking another user', async () => {
       const googleData = {
         googleId: 'g123_shared',
         email: 'shared@example.com',
@@ -354,26 +354,26 @@ describe('Auth Service', () => {
         expiryDate: new Date()
       };
 
-      prisma.user.findFirst.mockResolvedValueOnce({ id: 'old_user_id', email: 'old@bookly.com' });
+      prisma.user.findFirst.mockResolvedValueOnce({ id: 'old_user_id', username: 'old_user', email: 'old@bookly.com' });
       prisma.user.update
-        .mockResolvedValueOnce({ id: 'old_user_id', googleId: null }) // First call unlinks old user
         .mockResolvedValueOnce({
           id: 'current_user_id',
           email: 'current@bookly.com',
-          googleId: 'g123_shared'
-        }); // Second call links current user
+          googleId: null,
+          googleAccessToken: 'new_g_access',
+          googleRefreshToken: 'new_g_refresh'
+        });
 
       const result = await linkGoogleAccount('current_user_id', googleData);
 
-      expect(result.googleId).toBe('g123_shared');
-      expect(prisma.user.update).toHaveBeenCalledTimes(2);
-      expect(prisma.user.update).toHaveBeenNthCalledWith(1, {
-        where: { id: 'old_user_id' },
+      expect(result.googleId).toBeNull();
+      expect(prisma.user.update).toHaveBeenCalledTimes(1);
+      expect(prisma.user.update).toHaveBeenCalledWith({
+        where: { id: 'current_user_id' },
         data: {
-          googleId: null,
-          googleAccessToken: null,
-          googleRefreshToken: null,
-          googleTokenExpiry: null
+          googleAccessToken: 'new_g_access',
+          googleRefreshToken: 'new_g_refresh',
+          googleTokenExpiry: googleData.expiryDate
         }
       });
     });

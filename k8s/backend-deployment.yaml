@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bookly-backend
+  namespace: default
+  labels:
+    app: bookly-backend
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: bookly-backend
+  template:
+    metadata:
+      labels:
+        app: bookly-backend
+    spec:
+      containers:
+      - name: api
+        image: GCP_ARTIFACT_REGISTRY_IMAGE_PLACEHOLDER # Will be dynamically updated by the deployment script
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: http
+          containerPort: 3000
+        
+        # Resource requests and limits for optimal container scaling and CPU throttling prevention
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "256Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+        
+        # Load all environment variables from our Kubernetes secret
+        envFrom:
+        - secretRef:
+            name: bookly-backend-secrets
+        
+        # Readiness probe to check if container is fully initialized and connected to the DB
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 15
+          periodSeconds: 15
+          timeoutSeconds: 3
+          failureThreshold: 3
+        
+        # Liveness probe to restart the container if it goes into an unrecoverable/locked state
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 20
+          periodSeconds: 20
+          timeoutSeconds: 5
+          failureThreshold: 3

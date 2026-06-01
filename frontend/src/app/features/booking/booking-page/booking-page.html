@@ -178,19 +178,20 @@
           <form #bookingForm="ngForm" (submit)="$event.preventDefault(); bookingForm.valid && submitBooking()" class="space-y-4">
             <div class="space-y-2">
               <label for="name" class="text-sm font-medium">Name *</label>
-              <input type="text" id="name" [ngModel]="guestName()" (ngModelChange)="guestName.set($event)" name="name" required #nameInput="ngModel"
+              <input type="text" id="name" [ngModel]="guestName()" (ngModelChange)="guestName.set($event)" name="name" required maxlength="50" #nameInput="ngModel"
                 [class.border-red-500]="nameInput.invalid && (nameInput.dirty || nameInput.touched)"
                 [class.focus-visible:ring-red-500]="nameInput.invalid && (nameInput.dirty || nameInput.touched)"
                 class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
                 placeholder="John Doe" />
               <div *ngIf="nameInput.invalid && (nameInput.dirty || nameInput.touched)" class="text-xs text-red-500 font-medium animate-in fade-in duration-200">
-                Name is required.
+                <span *ngIf="nameInput.errors?.['required']">Name is required.</span>
+                <span *ngIf="nameInput.errors?.['maxlength']">Name cannot exceed 50 characters.</span>
               </div>
             </div>
             
             <div class="space-y-2">
               <label for="email" class="text-sm font-medium">Email *</label>
-              <input type="email" id="email" [ngModel]="guestEmail()" (ngModelChange)="guestEmail.set($event)" name="email" required email #emailInput="ngModel"
+              <input type="email" id="email" [ngModel]="guestEmail()" (ngModelChange)="guestEmail.set($event)" name="email" required email maxlength="100" #emailInput="ngModel"
                 [class.border-red-500]="emailInput.invalid && (emailInput.dirty || emailInput.touched)"
                 [class.focus-visible:ring-red-500]="emailInput.invalid && (emailInput.dirty || emailInput.touched)"
                 class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
@@ -198,14 +199,25 @@
               <div *ngIf="emailInput.invalid && (emailInput.dirty || emailInput.touched)" class="text-xs text-red-500 font-medium animate-in fade-in duration-200">
                 <span *ngIf="emailInput.errors?.['required']">Email is required.</span>
                 <span *ngIf="emailInput.errors?.['email']">Please enter a valid email address.</span>
+                <span *ngIf="emailInput.errors?.['maxlength']">Email cannot exceed 100 characters.</span>
               </div>
             </div>
             
             <div class="space-y-2">
-              <label for="notes" class="text-sm font-medium">Please share anything that will help prepare for our meeting.</label>
-              <textarea id="notes" [ngModel]="notes()" (ngModelChange)="notes.set($event)" name="notes" rows="4"
+              <div class="flex justify-between items-center">
+                <label for="notes" class="text-sm font-medium">Please share anything that will help prepare for our meeting.</label>
+                <span class="text-xs text-muted-foreground" [class.text-red-500]="(notes() || '').length >= 500">
+                  {{ (notes() || '').length }}/500
+                </span>
+              </div>
+              <textarea id="notes" [ngModel]="notes()" (ngModelChange)="notes.set($event)" name="notes" rows="4" maxlength="500" #notesInput="ngModel"
+                [class.border-red-500]="notesInput.invalid && (notesInput.dirty || notesInput.touched)"
+                [class.focus-visible:ring-red-500]="notesInput.invalid && (notesInput.dirty || notesInput.touched)"
                 class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 placeholder="Notes..."></textarea>
+              <div *ngIf="notesInput.invalid && (notesInput.dirty || notesInput.touched)" class="text-xs text-red-500 font-medium animate-in fade-in duration-200">
+                <span *ngIf="notesInput.errors?.['maxlength']">Notes cannot exceed 500 characters.</span>
+              </div>
             </div>
             
             <div class="pt-4">

@@ -246,10 +246,29 @@ export class BookingPageComponent {
 
     if (!this.guestName() || !this.guestEmail() || !slot || !hostUser) return;
 
+    const trimmedName = this.guestName().trim();
+    const trimmedEmail = this.guestEmail().trim();
+    const trimmedNotes = this.notes().trim();
+
+    if (trimmedName.length > 50) {
+      alert('Name cannot exceed 50 characters.');
+      return;
+    }
+
+    if (trimmedEmail.length > 100) {
+      alert('Email cannot exceed 100 characters.');
+      return;
+    }
+
     // Timezone-safe and format-safe regex email check
     const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    if (!emailPattern.test(this.guestEmail().trim())) {
+    if (!emailPattern.test(trimmedEmail)) {
       alert('Please enter a valid email address.');
+      return;
+    }
+
+    if (trimmedNotes.length > 500) {
+      alert('Notes cannot exceed 500 characters.');
       return;
     }
     

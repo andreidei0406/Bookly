@@ -15,8 +15,13 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     catchError((error: HttpErrorResponse) => {
       // If 401 Unauthorized, try to refresh tokens blindly (since token is in HttpOnly cookie)
       if (error.status === 401) {
+        // If the login request itself fails with 401, return the error immediately
+        if (req.url.includes('/login')) {
+          return throwError(() => error);
+        }
+
         // Prevent infinite loop if the refresh token endpoint itself returns 401
-        if (req.url.includes('/refresh-token') || req.url.includes('/login')) {
+        if (req.url.includes('/refresh-token')) {
           authService.clearSession();
           return throwError(() => error);
         }

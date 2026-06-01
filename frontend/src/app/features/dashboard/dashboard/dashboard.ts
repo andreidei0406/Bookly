@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, computed, ViewChild, ElementRef, inject, ChangeDetectorRef, NgZone } from '@angular/core';
+import { Component, OnInit, signal, computed, ViewChild, ElementRef, inject, ChangeDetectorRef, NgZone, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FullCalendarModule, FullCalendarComponent } from '@fullcalendar/angular';
@@ -129,6 +129,19 @@ export class Dashboard implements OnInit {
       ).subscribe({
         next: ([blocksRes, googleRes, bookingsRes]: [any, any, any]) => {
           const events = [];
+          
+          // Clean up any remaining temporary/unsaved slots from the calendar UI to prevent duplicate overlays
+          try {
+            const calendarApi = this.calendarComponent.getApi();
+            calendarApi.getEvents().forEach(ev => {
+              if (ev.id && ev.id.startsWith('temp-')) {
+                ev.remove();
+              }
+            });
+          } catch {
+            // Ignore if calendar component is not yet fully initialized
+          }
+
           
           if (blocksRes.data) {
             events.push(...blocksRes.data.map((block: any) => ({
@@ -315,18 +328,21 @@ export class Dashboard implements OnInit {
       next: () => {
         this.isSaving.set(false);
         const calendarApi = this.calendarComponent.getApi();
-        // Remove manually added temp events from calendar
+        
+        // Solidify the unsaved blocks in place instantly for a seamless premium transition
         blocks.forEach(block => {
-          if (block.action === 'create' || block.id.startsWith('temp-')) {
-            const ev = calendarApi.getEventById(block.id);
-            if (ev) ev.remove();
+          const ev = calendarApi.getEventById(block.id);
+          if (ev) {
+            ev.setProp('title', 'Available');
+            ev.setProp('classNames', ['cursor-pointer', 'available-event']);
+            ev.setExtendedProp('status', 'available');
           }
         });
+        
         this.unsavedBlocks.set([]);
-        calendarApi.removeAllEvents();
+        
+        // Background refetch silently syncs all blocks from the DB without any screen flickering
         calendarApi.refetchEvents();
-        calendarApi.render();
-        this.calendarOptions = { ...this.calendarOptions };
         this.cdr.detectChanges();
       },
       error: (err) => {
@@ -508,5 +524,18 @@ export class Dashboard implements OnInit {
     const user = this.currentUser();
     if (!user) return '?';
     return (user.firstName?.[0] || '') + (user.lastName?.[0] || '');
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent) {
+    if (!this.showProfileDropdown()) return;
+    
+    const target = event.target as HTMLElement;
+    const clickedTrigger = target.closest('.profile-trigger');
+    const clickedDropdown = target.closest('.profile-dropdown');
+    
+    if (!clickedTrigger && !clickedDropdown) {
+      this.showProfileDropdown.set(false);
+    }
   }
 }

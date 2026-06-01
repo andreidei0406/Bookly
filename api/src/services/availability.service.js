@@ -35,9 +35,14 @@ export async function getBlocks(userId, query) {
   
   const where = { userId };
   if (startDate && endDate) {
+    const start = new Date(startDate.split('T')[0]);
+    start.setUTCHours(0, 0, 0, 0);
+    const end = new Date(endDate.split('T')[0]);
+    end.setUTCHours(0, 0, 0, 0);
+
     where.date = {
-      gte: new Date(startDate),
-      lte: new Date(endDate)
+      gte: start,
+      lte: end
     };
   }
 
@@ -109,9 +114,9 @@ export async function clearBlocks(userId, query) {
   const { startDate, endDate } = query;
   const where = { userId };
   if (startDate && endDate) {
-    const start = new Date(startDate);
+    const start = new Date(startDate.split('T')[0]);
     start.setUTCHours(0, 0, 0, 0);
-    const end = new Date(endDate);
+    const end = new Date(endDate.split('T')[0]);
     end.setUTCHours(23, 59, 59, 999);
 
     where.date = {
@@ -175,7 +180,7 @@ export async function getAvailableSlots(username, { date, duration }) {
   const userId = hostUser.id;
 
   // 2. Get AvailabilityBlocks for that day
-  const targetDate = new Date(date);
+  const targetDate = new Date(date.split('T')[0]);
   targetDate.setUTCHours(0, 0, 0, 0);
 
   const blocks = await prisma.availabilityBlock.findMany({
@@ -190,10 +195,10 @@ export async function getAvailableSlots(username, { date, duration }) {
   }
 
   // 3. Get existing bookings for that date
-  const dayStart = new Date(date);
+  const dayStart = new Date(date.split('T')[0]);
   dayStart.setUTCHours(0, 0, 0, 0);
 
-  const dayEnd = new Date(date);
+  const dayEnd = new Date(date.split('T')[0]);
   dayEnd.setUTCHours(23, 59, 59, 999);
 
   const existingBookings = await prisma.booking.findMany({

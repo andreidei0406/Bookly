@@ -1,0 +1,23 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: bookly-db-migration
+  namespace: default
+spec:
+  template:
+    metadata:
+      labels:
+        app: bookly-db-migration
+    spec:
+      containers:
+      - name: db-migration
+        image: GCP_ARTIFACT_REGISTRY_IMAGE_PLACEHOLDER # Will be dynamically updated by the deployment script
+        command: ["npx", "prisma", "migrate", "deploy", "--schema=src/prisma/schema.prisma"]
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: bookly-backend-secrets
+              key: DATABASE_URL
+      restartPolicy: OnFailure
+  backoffLimit: 4

@@ -12,8 +12,10 @@ import {
   resetPasswordSchema,
 } from '../validators/auth.validator.js';
 import prisma from '../utils/prisma.js';
+import { verifyAccessToken, generateStateToken, verifyRefreshToken } from '../utils/tokens.js';
 
 const router = Router();
+
 
 /**
  * @route POST /api/v1/auth/register
@@ -102,25 +104,60 @@ router.post(
  */
 router.get(
   '/google',
-  passport.authenticate('google', {
-    scope: [
-      'profile', 
-      'email', 
-      'https://www.googleapis.com/auth/calendar.events',
-      'https://www.googleapis.com/auth/calendar.readonly'
-    ],
-    accessType: 'offline', // Request a refresh token
-    prompt: 'consent',     // Force consent screen to always get refresh token
-  })
+  (req, res, next) => {
+    const isLinkAction = req.query?.action === 'link';
+    let stateToken = undefined;
+    let userId = null;
+    
+    if (isLinkAction) {
+      const token = req.cookies?.accessToken;
+      if (token) {
+        try {
+          const decoded = verifyAccessToken(token);
+          userId = decoded.id;
+        } catch {
+          // Ignore invalid/expired token cookie
+        }
+      }
+
+      // Fallback to refresh token if access token has expired or is missing
+      if (!userId && req.cookies?.refreshToken) {
+        try {
+          const decoded = verifyRefreshToken(req.cookies.refreshToken);
+          userId = decoded.sub || decoded.id;
+        } catch {
+          // Ignore invalid/expired refresh token
+        }
+      }
+
+      if (userId) {
+        stateToken = generateStateToken({ userId });
+      }
+    }
+
+    passport.authenticate('google', {
+      scope: [
+        'profile', 
+        'email', 
+        'https://www.googleapis.com/auth/calendar.events',
+        'https://www.googleapis.com/auth/calendar.readonly'
+      ],
+      accessType: 'offline', // Request a refresh token
+      prompt: 'consent',     // Force consent screen to always get refresh token
+      ...(stateToken && { state: stateToken }),
+    })(req, res, next);
+  }
 );
 
-/**
- * @route GET /api/v1/auth/google/callback
- * @desc Google OAuth callback
- * @access Public
- */
+
 router.get(
   '/google/callback',
+  (req, res, next) => {
+    if (req.query?.state) {
+      req.oauthState = req.query.state;
+    }
+    next();
+  },
   passport.authenticate('google', { session: false, failureRedirect: '/login' }),
   authController.googleCallback
 );

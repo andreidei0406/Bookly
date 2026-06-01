@@ -120,7 +120,7 @@ export async function login({ email, password }) {
     where: { email }
   });
   if (!user) {
-    throw ApiError.unauthorized('Invalid email or password');
+    throw ApiError.notFound('Account not found');
   }
 
   const isMatch = await bcrypt.compare(password, user.password);
@@ -425,12 +425,6 @@ export async function googleLogin(googleData) {
   };
 }
 
-/**
- * Link a Google account to an existing user account.
- * @param {string} userId - Current logged-in user ID
- * @param {object} googleData - Google OAuth data from passport
- * @returns {Promise<object>} - Updated user
- */
 export async function linkGoogleAccount(userId, googleData) {
   const { googleId, email, accessToken, refreshToken, expiryDate } = googleData;
 
@@ -443,19 +437,27 @@ export async function linkGoogleAccount(userId, googleData) {
   });
 
   if (existingGoogleUser) {
-    // Unlink the old user cleanly to avoid duplicate constraints and ensure a seamless re-link
-    await prisma.user.update({
-      where: { id: existingGoogleUser.id },
+    // Soft Link Flow: Keep existing Google ID on the original account.
+    // Save calendar token details on the current user so they can import busy calendar events,
+    // but DO NOT set googleId to avoid stealing the login identity or violating constraints.
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
       data: {
-        googleId: null,
-        googleAccessToken: null,
-        googleRefreshToken: null,
-        googleTokenExpiry: null
+        googleAccessToken: accessToken,
+        googleRefreshToken: refreshToken || undefined, // Keep existing if new is empty
+        googleTokenExpiry: expiryDate,
       }
     });
+
+    logger.info(`Soft-linked Google Calendar tokens from ${email} to Bookly user ID: ${userId} (already linked to ${existingGoogleUser.username})`);
+    
+    // Background-sync missing Google Meet links
+    syncMissingMeetLinks(userId);
+
+    return excludePassword(updatedUser);
   }
 
-  // 2. Link Google credentials to current logged-in user session
+  // 2. Standard Link Flow: Google account is not connected to any other user. Connect fully (identity + calendar).
   const updatedUser = await prisma.user.update({
     where: { id: userId },
     data: {
