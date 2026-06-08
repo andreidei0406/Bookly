@@ -225,6 +225,16 @@ export class Dashboard implements OnInit {
         return;
       }
 
+      const selectDate = new Date(selectInfo.start);
+      selectDate.setHours(0, 0, 0, 0);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      if (selectDate < today) {
+        alert('Cannot set availability in the past.');
+        return;
+      }
+
       const date = selectInfo.startStr.split('T')[0];
       const startTime = selectInfo.startStr.split('T')[1].substring(0, 5);
       const endTime = selectInfo.endStr.split('T')[1].substring(0, 5);
@@ -267,6 +277,17 @@ export class Dashboard implements OnInit {
         return;
       }
       
+      const dropDate = new Date(event.start);
+      dropDate.setHours(0, 0, 0, 0);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      if (dropDate < today) {
+        alert('Cannot move availability to the past.');
+        dropInfo.revert();
+        return;
+      }
+
       const id = event.id;
       const date = dropInfo.event.startStr.split('T')[0];
       const startTime = dropInfo.event.startStr.split('T')[1].substring(0, 5);
@@ -292,6 +313,17 @@ export class Dashboard implements OnInit {
         return;
       }
       
+      const resizeDate = new Date(event.start);
+      resizeDate.setHours(0, 0, 0, 0);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      if (resizeDate < today) {
+        alert('Cannot resize availability into the past.');
+        resizeInfo.revert();
+        return;
+      }
+
       const id = event.id;
       const date = resizeInfo.event.startStr.split('T')[0];
       const startTime = resizeInfo.event.startStr.split('T')[1].substring(0, 5);

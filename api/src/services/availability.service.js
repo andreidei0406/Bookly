@@ -30,7 +30,29 @@ function minutesToTime(minutes) {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
 
+async function prunePastBlocks(userId) {
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+  try {
+    const result = await prisma.availabilityBlock.deleteMany({
+      where: {
+        userId,
+        date: {
+          lt: today
+        }
+      }
+    });
+    if (result.count > 0) {
+      logger.info(`Pruned ${result.count} past availability blocks for user ${userId}`);
+    }
+  } catch (error) {
+    logger.error(`Failed to prune past availability blocks for user ${userId}: ${error.message}`);
+  }
+}
+
 export async function getBlocks(userId, query) {
+  await prunePastBlocks(userId);
+
   const { startDate, endDate } = query;
   
   const where = { userId };
@@ -55,6 +77,13 @@ export async function getBlocks(userId, query) {
 export async function createBlock(userId, data) {
   const date = new Date(data.date);
   date.setUTCHours(0, 0, 0, 0);
+
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+
+  if (date < today) {
+    throw ApiError.badRequest('Cannot create availability blocks in the past');
+  }
 
   const startMins = timeToMinutes(data.startTime);
   const endMins = timeToMinutes(data.endTime);
@@ -139,6 +168,13 @@ export async function updateBlock(userId, blockId, data) {
   const date = new Date(data.date);
   date.setUTCHours(0, 0, 0, 0);
 
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+
+  if (date < today) {
+    throw ApiError.badRequest('Cannot update availability blocks to a past date');
+  }
+
   return prisma.availabilityBlock.update({
     where: { id: blockId, userId },
     data: {
@@ -178,6 +214,7 @@ export async function getAvailableSlots(username, { date, duration }) {
   }
 
   const userId = hostUser.id;
+  await prunePastBlocks(userId);
 
   // 2. Get AvailabilityBlocks for that day
   const targetDate = new Date(date.split('T')[0]);
@@ -291,6 +328,8 @@ export async function getAvailableDays(username, month) {
   if (!hostUser) {
     throw ApiError.notFound('Host user not found');
   }
+
+  await prunePastBlocks(hostUser.id);
 
   const startDate = new Date(`${month}-01T00:00:00.000Z`);
   const endDate = new Date(startDate);

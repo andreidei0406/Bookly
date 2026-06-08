@@ -37,8 +37,8 @@ api/src/prisma/client/
 api/coverage/
 
 # IDEs and Editors
-.vscode/
-.idea/
-
 DEMO/app
 DEMO/components
+
+# Sensitive Kubernetes secrets
+k8s/backend-secrets.yaml

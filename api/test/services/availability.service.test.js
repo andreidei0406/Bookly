@@ -40,7 +40,13 @@ vi.mock('../../src/services/google.service.js', () => ({
 }));
 
 describe('Availability Service', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2025-05-01T00:00:00.000Z'));
+  });
+
   afterEach(() => {
+    vi.useRealTimers();
     vi.clearAllMocks();
   });
 

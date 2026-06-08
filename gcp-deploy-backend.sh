@@ -77,7 +77,7 @@ gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
 
 # 2. Build local Docker Image
 log_info "Building production backend Docker image..."
-docker build -t "$FULL_IMAGE_NAME" -f api/Dockerfile api/
+docker build --platform linux/amd64 -t "$FULL_IMAGE_NAME" -f api/Dockerfile api/
 
 # 3. Push Image to Google Artifact Registry
 log_info "Pushing image to Google Artifact Registry..."
