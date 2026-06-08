@@ -1,0 +1,48 @@
+# Git
+.git
+.gitignore
+.github
+
+# Environment files
+**/.env
+**/.env.*
+!**/.env.example
+
+# Node modules (each stage installs its own)
+**/node_modules
+
+# Build artifacts
+frontend/dist
+frontend/.angular
+
+# Markdown files
+*.md
+!README.md
+
+# Kubernetes manifests & deploy scripts
+k8s/
+gcp-deploy-backend.sh
+
+# Docker files (don't include themselves)
+docker-compose.yml
+docker-compose.*.yml
+
+# IDE & OS
+.vscode
+.idea
+**/.DS_Store
+**/Thumbs.db
+
+# Logs
+**/*.log
+**/logs
+
+# Tests & linting
+**/coverage
+api/.eslintrc.json
+api/eslint.config.js
+api/test
+
+# Gemini config
+SKILL.md
+.gemini

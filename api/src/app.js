@@ -1,4 +1,6 @@
 import express from 'express';
+import { fileURLToPath } from 'url';
+import path from 'path';
 import helmet from 'helmet';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
@@ -11,6 +13,9 @@ import routes from './routes/index.js';
 import prisma from './utils/prisma.js';
 import ApiError from './utils/apiError.js';
 import passport from './config/passport.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 
@@ -79,11 +84,19 @@ app.use(passport.initialize());
 app.use('/api/v1', routes);
 
 // ---------------------------------------------------------------------------
-// 404 handler for unknown routes
+// Static frontend serving (production Angular SPA)
 // ---------------------------------------------------------------------------
 
-app.use((_req, _res, next) => {
-  next(new ApiError(404, 'Route not found'));
+const publicDir = path.join(__dirname, '..', 'public');
+app.use(express.static(publicDir));
+
+// SPA fallback — any route not matching API or static files serves index.html
+app.use((req, res, next) => {
+  // Skip API and health routes (they're already handled above)
+  if (req.path.startsWith('/api') || req.path === '/health') {
+    return next(new ApiError(404, 'Route not found'));
+  }
+  res.sendFile(path.join(publicDir, 'index.html'));
 });
 
 // ---------------------------------------------------------------------------
@@ -93,3 +106,4 @@ app.use((_req, _res, next) => {
 app.use(errorHandler);
 
 export default app;
+

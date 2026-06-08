@@ -37,7 +37,7 @@ DEFAULT_IMAGE_NAME="bookly-api"
 DEFAULT_TAG="latest"
 
 echo -e "${BLUE}====================================================${NC}"
-echo -e "${BLUE}       BOOKLY BACKEND GCP/GKE ROLLOUT INITIATOR      ${NC}"
+echo -e "${BLUE}       BOOKLY UNIFIED GCP/GKE ROLLOUT INITIATOR       ${NC}"
 echo -e "${BLUE}====================================================${NC}"
 
 # Read inputs with premium terminal prompt feel
@@ -77,7 +77,7 @@ gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
 
 # 2. Build local Docker Image
 log_info "Building production backend Docker image..."
-docker build --platform linux/amd64 -t "$FULL_IMAGE_NAME" -f api/Dockerfile api/
+docker build --platform linux/amd64 -t "$FULL_IMAGE_NAME" -f Dockerfile .
 
 # 3. Push Image to Google Artifact Registry
 log_info "Pushing image to Google Artifact Registry..."
@@ -139,7 +139,7 @@ kubectl rollout status deployment/bookly-backend
 
 echo ""
 echo -e "${GREEN}====================================================${NC}"
-echo -e "${GREEN}    BOOKLY API DEPLOYED & ONLINE ON GOOGLE CLOUD    ${NC}"
+echo -e "${GREEN}  BOOKLY DEPLOYED & ONLINE ON GOOGLE CLOUD (API+SPA)  ${NC}"
 echo -e "${GREEN}====================================================${NC}"
 log_success "Rolling update successfully completed. All pods running & healthy."
 log_info "Internal address: http://bookly-backend-service.default.svc.cluster.local:80"

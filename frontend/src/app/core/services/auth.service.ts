@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { tap, catchError } from 'rxjs/operators';
 import { throwError } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface User {
   id: string;
@@ -19,7 +20,7 @@ export interface User {
   providedIn: 'root'
 })
 export class AuthService {
-  private readonly API_URL = 'http://localhost:3000/api/v1/auth';
+  private readonly API_URL = `${environment.apiUrl}/v1/auth`;
   
   // State using Angular Signals
   readonly currentUser = signal<User | null>(null);
@@ -101,11 +102,11 @@ export class AuthService {
   }
 
   getPublicProfile(username: string) {
-    return this.http.get<{data: User}>(`http://localhost:3000/api/v1/users/${username}`);
+    return this.http.get<{data: User}>(`${environment.apiUrl}/v1/users/${username}`);
   }
 
   updateProfile(data: any) {
-    return this.http.patch<{data: User}>('http://localhost:3000/api/v1/users/me', data, { withCredentials: true }).pipe(
+    return this.http.patch<{data: User}>(`${environment.apiUrl}/v1/users/me`, data, { withCredentials: true }).pipe(
       tap(res => {
         this.currentUser.set(res.data);
       })

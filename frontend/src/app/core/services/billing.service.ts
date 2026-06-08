@@ -2,12 +2,13 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { User } from './auth.service';
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class BillingService {
-  private readonly API_URL = 'http://localhost:3000/api/v1/billing';
+  private readonly API_URL = `${environment.apiUrl}/v1/billing`;
 
   constructor(private http: HttpClient) {}
 

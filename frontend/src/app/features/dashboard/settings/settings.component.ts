@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { BillingService } from '../../../core/services/billing.service';
+import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-settings',
@@ -312,7 +313,7 @@ export class SettingsComponent implements OnInit {
   }
 
   connectGoogle() {
-    window.location.href = 'http://localhost:3000/api/v1/auth/google?action=link';
+    window.location.href = `${environment.apiUrl}/v1/auth/google?action=link`;
   }
 
   disconnectGoogle() {

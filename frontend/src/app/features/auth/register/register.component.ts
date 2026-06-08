@@ -2,6 +2,7 @@ import { Component, inject, OnInit } from '@angular/core';
 import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AuthService } from '../../../core/services/auth.service';
+import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-register',
@@ -68,6 +69,6 @@ export class RegisterComponent implements OnInit {
   }
 
   loginWithGoogle() {
-    window.location.href = 'http://localhost:3000/api/v1/auth/google';
+    window.location.href = `${environment.apiUrl}/v1/auth/google`;
   }
 }
