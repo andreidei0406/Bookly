@@ -1,274 +1,320 @@
 <div class="min-h-screen bg-muted/30 flex items-center justify-center p-4">
   
   <!-- Inactive Subscription Notice for Free Plan Hosts -->
-  <div *ngIf="host() && host()?.plan === 'FREE'" class="w-full max-w-md bg-white rounded-3xl p-8 border border-slate-200/80 shadow-xl text-center relative overflow-hidden animate-in zoom-in-95 duration-300">
-    <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-amber-50 border border-amber-200 text-amber-500 mb-6 shadow-sm">
-      <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-      </svg>
+  @if (host() && host()?.plan === 'FREE') {
+    <div class="w-full max-w-md bg-white rounded-3xl p-8 border border-slate-200/80 shadow-xl text-center relative overflow-hidden animate-in zoom-in-95 duration-300">
+      <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-amber-50 border border-amber-200 text-amber-500 mb-6 shadow-sm">
+        <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+        </svg>
+      </div>
+      <h2 class="text-2xl font-extrabold text-slate-900 mb-3 tracking-tight">Booking Page Inactive</h2>
+      <p class="text-slate-500 text-sm leading-relaxed mb-6">
+        This scheduling page is currently inactive because the host is on the <strong>Free</strong> subscription plan. 
+        Hosts must upgrade to a Premium or Ultimate plan to share their booking links.
+      </p>
+      <div class="w-full border-t border-slate-100 pt-6">
+        <a routerLink="/" class="text-sm font-semibold text-indigo-600 hover:text-indigo-700 transition-colors">Powered by Bookly</a>
+      </div>
     </div>
-    <h2 class="text-2xl font-extrabold text-slate-900 mb-3 tracking-tight">Booking Page Inactive</h2>
-    <p class="text-slate-500 text-sm leading-relaxed mb-6">
-      This scheduling page is currently inactive because the host is on the <strong>Free</strong> subscription plan. 
-      Hosts must upgrade to a Premium or Ultimate plan to share their booking links.
-    </p>
-    <div class="w-full border-t border-slate-100 pt-6">
-      <a routerLink="/" class="text-sm font-semibold text-indigo-600 hover:text-indigo-700 transition-colors">Powered by Bookly</a>
-    </div>
-  </div>
+  }
 
   <!-- Standard Booking Flow (Only if NOT Free) -->
-  <div *ngIf="!host() || host()?.plan !== 'FREE'" class="w-full max-w-4xl bg-card text-card-foreground shadow-sm rounded-xl border overflow-hidden grid grid-cols-1 md:grid-cols-[1fr_2fr] transition-all duration-300 min-h-[500px]">
-    
-    <!-- Left Column: Host & Service Info -->
-    <div class="p-6 md:p-8 border-b md:border-b-0 md:border-r bg-muted/10">
-      <div class="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-2">
-        {{ hostName() }}
-      </div>
-      <h1 class="text-2xl font-bold mb-8">{{ meetingTypeName() }}</h1>
+  @if (!host() || host()?.plan !== 'FREE') {
+    <div class="w-full max-w-4xl bg-card text-card-foreground shadow-sm rounded-xl border overflow-hidden grid grid-cols-1 md:grid-cols-[1fr_2fr] transition-all duration-300 min-h-[500px]">
       
-      <div class="space-y-6 text-muted-foreground text-sm">
-        <div class="flex items-center gap-3">
-          <svg class="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <span class="font-medium text-foreground">{{ duration() }} min</span>
+      <!-- Left Column: Host & Service Info -->
+      <div class="p-6 md:p-8 border-b md:border-b-0 md:border-r bg-muted/10">
+        <div class="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-2">
+          {{ hostName() }}
         </div>
+        <h1 class="text-2xl font-bold mb-8">{{ meetingTypeName() }}</h1>
         
-        <!-- Step 2/3 summary info -->
-        <ng-container *ngIf="selectedSlot() && (step() === 'enter-details' || step() === 'confirmed')">
-          <div class="flex items-start gap-3">
-            <svg class="w-5 h-5 text-primary mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            <div>
-              <p class="font-medium text-foreground">{{ selectedSlot()?.start | date:'EEEE, MMMM d, yyyy' }}</p>
-              <p>{{ selectedSlot()?.start | date:'h:mm a' }} - {{ selectedSlot()?.end | date:'h:mm a' }}</p>
-            </div>
-          </div>
+        <div class="space-y-6 text-muted-foreground text-sm">
           <div class="flex items-center gap-3">
             <svg class="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <span>{{ timezone() }}</span>
+            <span class="font-medium text-foreground">{{ duration() }} min</span>
           </div>
-        </ng-container>
+          
+          <!-- Step 2/3 summary info -->
+          @if (selectedSlot() && (step() === 'enter-details' || step() === 'confirmed')) {
+            <div class="flex items-start gap-3">
+              <svg class="w-5 h-5 text-primary mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <div>
+                <p class="font-medium text-foreground">{{ selectedSlot()?.start | date:'EEEE, MMMM d, yyyy' }}</p>
+                <p>{{ selectedSlot()?.start | date:'h:mm a' }} - {{ selectedSlot()?.end | date:'h:mm a' }}</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <svg class="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+              </svg>
+              <span>{{ timezone() }}</span>
+            </div>
+          }
+        </div>
       </div>
-    </div>
 
-    <!-- Right Column: Interactive Content based on Step -->
-    <div class="flex flex-col relative overflow-hidden">
-      
-      <!-- STEP 1: Select Date & Time -->
-      <ng-container *ngIf="step() === 'select-time'">
-        <div class="flex-grow flex flex-col md:flex-row h-full">
-          <!-- Calendar -->
-          <div class="p-6 md:p-8 flex-grow" [class.md:pr-4]="selectedDate()">
-            <h2 class="text-lg font-semibold mb-6">Select a Date & Time</h2>
-            
-            <div class="flex items-center justify-between mb-4">
-              <h3 class="font-medium">{{ currentMonth() | date:'MMMM yyyy' }}</h3>
-              <div class="flex gap-2">
-                <button (click)="previousMonth()" class="p-1.5 rounded-md border hover:bg-muted text-muted-foreground hover:text-foreground">
-                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
-                </button>
-                <button (click)="nextMonth()" class="p-1.5 rounded-md border hover:bg-muted text-muted-foreground hover:text-foreground">
-                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
-                </button>
-              </div>
-            </div>
-
-            <!-- Days of Week -->
-            <div class="grid grid-cols-7 gap-1 mb-2">
-              <div *ngFor="let day of ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']" class="text-center text-xs font-medium text-muted-foreground py-2">
-                {{ day }}
-              </div>
-            </div>
-
-            <!-- Calendar Grid -->
-            <div class="grid grid-cols-7 gap-1">
-              <div *ngFor="let day of calendarDays()">
-                <ng-container *ngIf="day.date; else emptySlot">
-                  <button 
-                    (click)="selectDate(day)"
-                    [disabled]="!day.isSelectable"
-                    class="w-10 h-10 mx-auto flex items-center justify-center rounded-full text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    [ngClass]="{
-                      'text-muted-foreground cursor-not-allowed opacity-50': !day.isSelectable,
-                      'text-foreground font-medium hover:bg-muted': day.isSelectable && day.date.getTime() !== selectedDate()?.getTime(),
-                      'bg-primary text-primary-foreground font-semibold': day.date.getTime() === selectedDate()?.getTime(),
-                      'bg-primary/10 text-primary font-semibold hover:bg-primary/20': day.isSelectable && day.date.getTime() !== selectedDate()?.getTime()
-                    }">
-                    {{ day.date | date:'d' }}
-                  </button>
-                </ng-container>
-                <ng-template #emptySlot>
-                  <div class="w-10 h-10 mx-auto"></div>
-                </ng-template>
-              </div>
-            </div>
-            
-            <div class="mt-8 text-xs text-muted-foreground">
-              <span class="inline-flex items-center gap-1.5">
-                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
-                </svg>
-                Timezone: {{ timezone() }}
-              </span>
-            </div>
-          </div>
-
-          <!-- Time Slots Panel -->
-          <div *ngIf="selectedDate()" class="w-full md:w-64 border-t md:border-t-0 md:border-l p-6 md:p-8 bg-muted/5 animate-in slide-in-from-right-4 duration-300 flex flex-col">
-            <p class="text-sm font-medium mb-4">{{ selectedDate() | date:'EEEE, MMMM d' }}</p>
-            
-            <div class="flex flex-col gap-2 flex-1">
-              <button *ngFor="let slot of paginatedSlots()"
-                (click)="selectSlot(slot)"
-                class="w-full py-3 px-4 rounded-md border text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                [ngClass]="{
-                  'bg-primary text-primary-foreground border-primary': selectedSlot() === slot,
-                  'bg-background hover:border-primary text-foreground': selectedSlot() !== slot
-                }">
-                {{ slot.start | date:'h:mm a' }}
-              </button>
+      <!-- Right Column: Interactive Content based on Step -->
+      <div class="flex flex-col relative overflow-hidden">
+        
+        <!-- STEP 1: Select Date & Time -->
+        @if (step() === 'select-time') {
+          <div class="flex-grow flex flex-col md:flex-row h-full">
+            <!-- Calendar -->
+            <div class="p-6 md:p-8 flex-grow" [class.md:pr-4]="selectedDate()">
+              <h2 class="text-lg font-semibold mb-6">Select a Date & Time</h2>
               
-              <div *ngIf="availableSlots().length === 0" class="text-sm text-muted-foreground mt-4 text-center">
-                No slots available.
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="font-medium">{{ currentMonth() | date:'MMMM yyyy' }}</h3>
+                <div class="flex gap-2">
+                  <button (click)="previousMonth()" class="p-1.5 rounded-md border hover:bg-muted text-muted-foreground hover:text-foreground">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+                  </button>
+                  <button (click)="nextMonth()" class="p-1.5 rounded-md border hover:bg-muted text-muted-foreground hover:text-foreground">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                  </button>
+                </div>
               </div>
-            </div>
 
-            <!-- Pagination Controls -->
-            <div *ngIf="slotsTotalPages() > 1" class="mt-6 flex items-center justify-between pt-4 border-t border-border/50">
-              <button (click)="prevSlotsPage()" 
-                      [disabled]="slotsCurrentPage() === 1" 
-                      class="p-2 rounded-md hover:bg-black/5 dark:hover:bg-white/10 disabled:opacity-30 disabled:pointer-events-none transition-colors">
-                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
-              </button>
-              <span class="text-xs text-muted-foreground font-medium uppercase tracking-wider">
-                Page {{ slotsCurrentPage() }} of {{ slotsTotalPages() }}
-              </span>
-              <button (click)="nextSlotsPage()" 
-                      [disabled]="slotsCurrentPage() === slotsTotalPages()" 
-                      class="p-2 rounded-md hover:bg-black/5 dark:hover:bg-white/10 disabled:opacity-30 disabled:pointer-events-none transition-colors">
-                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
-              </button>
-            </div>
-          </div>
-        </div>
+              <!-- Days of Week -->
+              <div class="grid grid-cols-7 gap-1 mb-2">
+                @for (day of ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']; track day) {
+                  <div class="text-center text-xs font-medium text-muted-foreground py-2">
+                    {{ day }}
+                  </div>
+                }
+              </div>
 
-        <!-- Continue Footer -->
-        <div *ngIf="selectedSlot()" class="border-t p-4 px-6 md:px-8 flex justify-end bg-background animate-in slide-in-from-bottom-2">
-          <button (click)="continueToDetails()" class="px-6 py-2.5 rounded-md bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-            Continue
-          </button>
-        </div>
-      </ng-container>
-
-      <!-- STEP 2: Enter Details -->
-      <ng-container *ngIf="step() === 'enter-details'">
-        <div class="p-6 md:p-8 flex-grow animate-in fade-in slide-in-from-right-4 duration-300">
-          <button (click)="goBackToTime()" class="text-sm font-medium text-muted-foreground hover:text-foreground mb-6 flex items-center gap-1 focus-visible:outline-none">
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
-            Back
-          </button>
-          
-          <h2 class="text-xl font-semibold mb-6">Enter Details</h2>
-          
-          <form #bookingForm="ngForm" (submit)="$event.preventDefault(); bookingForm.valid && submitBooking()" class="space-y-4">
-            <div class="space-y-2">
-              <label for="name" class="text-sm font-medium">Name *</label>
-              <input type="text" id="name" [ngModel]="guestName()" (ngModelChange)="guestName.set($event)" name="name" required maxlength="50" #nameInput="ngModel"
-                [class.border-red-500]="nameInput.invalid && (nameInput.dirty || nameInput.touched)"
-                [class.focus-visible:ring-red-500]="nameInput.invalid && (nameInput.dirty || nameInput.touched)"
-                class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
-                placeholder="John Doe" />
-              <div *ngIf="nameInput.invalid && (nameInput.dirty || nameInput.touched)" class="text-xs text-red-500 font-medium animate-in fade-in duration-200">
-                <span *ngIf="nameInput.errors?.['required']">Name is required.</span>
-                <span *ngIf="nameInput.errors?.['maxlength']">Name cannot exceed 50 characters.</span>
+              <!-- Calendar Grid -->
+              <div class="grid grid-cols-7 gap-1">
+                @for (day of calendarDays(); track day.date ? day.date.getTime() : $index) {
+                  <div>
+                    @if (day.date) {
+                      <button 
+                        (click)="selectDate(day)"
+                        [disabled]="!day.isSelectable"
+                        class="w-10 h-10 mx-auto flex items-center justify-center rounded-full text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        [class.text-muted-foreground]="!day.isSelectable"
+                        [class.cursor-not-allowed]="!day.isSelectable"
+                        [class.opacity-50]="!day.isSelectable"
+                        [class.text-foreground]="day.isSelectable && day.date.getTime() !== selectedDate()?.getTime()"
+                        [class.font-medium]="day.isSelectable && day.date.getTime() !== selectedDate()?.getTime()"
+                        [class.hover:bg-muted]="day.isSelectable && day.date.getTime() !== selectedDate()?.getTime()"
+                        [class.bg-primary]="day.date.getTime() === selectedDate()?.getTime()"
+                        [class.text-primary-foreground]="day.date.getTime() === selectedDate()?.getTime()"
+                        [class.font-semibold]="day.isSelectable"
+                        [class.bg-primary/10]="day.isSelectable && day.date.getTime() !== selectedDate()?.getTime()"
+                        [class.text-primary]="day.isSelectable && day.date.getTime() !== selectedDate()?.getTime()"
+                        [class.hover:bg-primary/20]="day.isSelectable && day.date.getTime() !== selectedDate()?.getTime()">
+                        {{ day.date | date:'d' }}
+                      </button>
+                    } @else {
+                      <div class="w-10 h-10 mx-auto"></div>
+                    }
+                  </div>
+                }
               </div>
-            </div>
-            
-            <div class="space-y-2">
-              <label for="email" class="text-sm font-medium">Email *</label>
-              <input type="email" id="email" [ngModel]="guestEmail()" (ngModelChange)="guestEmail.set($event)" name="email" required email maxlength="100" #emailInput="ngModel"
-                [class.border-red-500]="emailInput.invalid && (emailInput.dirty || emailInput.touched)"
-                [class.focus-visible:ring-red-500]="emailInput.invalid && (emailInput.dirty || emailInput.touched)"
-                class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
-                placeholder="john@example.com" />
-              <div *ngIf="emailInput.invalid && (emailInput.dirty || emailInput.touched)" class="text-xs text-red-500 font-medium animate-in fade-in duration-200">
-                <span *ngIf="emailInput.errors?.['required']">Email is required.</span>
-                <span *ngIf="emailInput.errors?.['email']">Please enter a valid email address.</span>
-                <span *ngIf="emailInput.errors?.['maxlength']">Email cannot exceed 100 characters.</span>
-              </div>
-            </div>
-            
-            <div class="space-y-2">
-              <div class="flex justify-between items-center">
-                <label for="notes" class="text-sm font-medium">Please share anything that will help prepare for our meeting.</label>
-                <span class="text-xs text-muted-foreground" [class.text-red-500]="(notes() || '').length >= 500">
-                  {{ (notes() || '').length }}/500
-                </span>
-              </div>
-              <textarea id="notes" [ngModel]="notes()" (ngModelChange)="notes.set($event)" name="notes" rows="4" maxlength="500" #notesInput="ngModel"
-                [class.border-red-500]="notesInput.invalid && (notesInput.dirty || notesInput.touched)"
-                [class.focus-visible:ring-red-500]="notesInput.invalid && (notesInput.dirty || notesInput.touched)"
-                class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                placeholder="Notes..."></textarea>
-              <div *ngIf="notesInput.invalid && (notesInput.dirty || notesInput.touched)" class="text-xs text-red-500 font-medium animate-in fade-in duration-200">
-                <span *ngIf="notesInput.errors?.['maxlength']">Notes cannot exceed 500 characters.</span>
-              </div>
-            </div>
-            
-            <div class="pt-4">
-              <button type="submit" [disabled]="isSubmitting() || bookingForm.invalid"
-                class="px-6 py-2.5 rounded-md bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 disabled:pointer-events-none">
-                <span *ngIf="!isSubmitting()">Schedule Event</span>
-                <span *ngIf="isSubmitting()" class="flex items-center gap-2">
-                  <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              
+              <div class="mt-8 text-xs text-muted-foreground">
+                <span class="inline-flex items-center gap-1.5">
+                  <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
                   </svg>
-                  Scheduling...
+                  Timezone: {{ timezone() }}
                 </span>
+              </div>
+            </div>
+
+            <!-- Time Slots Panel -->
+            @if (selectedDate()) {
+              <div class="w-full md:w-64 border-t md:border-t-0 md:border-l p-6 md:p-8 bg-muted/5 animate-in slide-in-from-right-4 duration-300 flex flex-col">
+                <p class="text-sm font-medium mb-4">{{ selectedDate() | date:'EEEE, MMMM d' }}</p>
+                
+                <div class="flex flex-col gap-2 flex-1">
+                  @for (slot of paginatedSlots(); track slot.start) {
+                    <button
+                      (click)="selectSlot(slot)"
+                      class="w-full py-3 px-4 rounded-md border text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      [class.bg-primary]="selectedSlot() === slot"
+                      [class.text-primary-foreground]="selectedSlot() === slot"
+                      [class.border-primary]="selectedSlot() === slot"
+                      [class.bg-background]="selectedSlot() !== slot"
+                      [class.hover:border-primary]="selectedSlot() !== slot"
+                      [class.text-foreground]="selectedSlot() !== slot">
+                      {{ slot.start | date:'h:mm a' }}
+                    </button>
+                  }
+                  
+                  @if (availableSlots().length === 0) {
+                    <div class="text-sm text-muted-foreground mt-4 text-center">
+                      No slots available.
+                    </div>
+                  }
+                </div>
+
+                <!-- Pagination Controls -->
+                @if (slotsTotalPages() > 1) {
+                  <div class="mt-6 flex items-center justify-between pt-4 border-t border-border/50">
+                    <button (click)="prevSlotsPage()" 
+                            [disabled]="slotsCurrentPage() === 1" 
+                            class="p-2 rounded-md hover:bg-black/5 dark:hover:bg-white/10 disabled:opacity-30 disabled:pointer-events-none transition-colors">
+                      <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+                    </button>
+                    <span class="text-xs text-muted-foreground font-medium uppercase tracking-wider">
+                      Page {{ slotsCurrentPage() }} of {{ slotsTotalPages() }}
+                    </span>
+                    <button (click)="nextSlotsPage()" 
+                            [disabled]="slotsCurrentPage() === slotsTotalPages()" 
+                            class="p-2 rounded-md hover:bg-black/5 dark:hover:bg-white/10 disabled:opacity-30 disabled:pointer-events-none transition-colors">
+                      <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                    </button>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+
+          <!-- Continue Footer -->
+          @if (selectedSlot()) {
+            <div class="border-t p-4 px-6 md:px-8 flex justify-end bg-background animate-in slide-in-from-bottom-2">
+              <button (click)="continueToDetails()" class="px-6 py-2.5 rounded-md bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                Continue
               </button>
             </div>
-          </form>
-        </div>
-      </ng-container>
+          }
+        }
 
-      <!-- STEP 3: Confirmed -->
-      <ng-container *ngIf="step() === 'confirmed'">
-        <div class="p-6 md:p-12 flex-grow flex flex-col items-center justify-center text-center animate-in zoom-in-95 duration-500">
-          <div class="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-6">
-            <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
-          </div>
-          <h2 class="text-2xl font-bold mb-2">You are scheduled</h2>
-          <p class="text-muted-foreground mb-8 max-w-sm">A calendar invitation has been sent to your email address.</p>
-          
-          <div class="border rounded-lg p-4 w-full max-w-sm text-left bg-muted/30">
-            <h3 class="font-medium mb-4">{{ meetingTypeName() }}</h3>
-            <div class="space-y-3 text-sm">
-              <div class="flex gap-3 text-muted-foreground">
-                <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-                <span>{{ guestName() }}</span>
+        <!-- STEP 2: Enter Details -->
+        @if (step() === 'enter-details') {
+          <div class="p-6 md:p-8 flex-grow animate-in fade-in slide-in-from-right-4 duration-300">
+            <button (click)="goBackToTime()" class="text-sm font-medium text-muted-foreground hover:text-foreground mb-6 flex items-center gap-1 focus-visible:outline-none">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+              Back
+            </button>
+            
+            <h2 class="text-xl font-semibold mb-6">Enter Details</h2>
+            
+            <form #bookingForm="ngForm" (submit)="$event.preventDefault(); bookingForm.valid && submitBooking()" class="space-y-4">
+              <div class="space-y-2">
+                <label for="name" class="text-sm font-medium">Name *</label>
+                <input type="text" id="name" [ngModel]="guestName()" (ngModelChange)="guestName.set($event)" name="name" required maxlength="50" #nameInput="ngModel"
+                  [class.border-red-500]="nameInput.invalid && (nameInput.dirty || nameInput.touched)"
+                  [class.focus-visible:ring-red-500]="nameInput.invalid && (nameInput.dirty || nameInput.touched)"
+                  class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
+                  placeholder="John Doe" />
+                @if (nameInput.invalid && (nameInput.dirty || nameInput.touched)) {
+                  <div class="text-xs text-red-500 font-medium animate-in fade-in duration-200">
+                    @if (nameInput.errors?.['required']) {
+                      <span>Name is required.</span>
+                    }
+                    @if (nameInput.errors?.['maxlength']) {
+                      <span>Name cannot exceed 50 characters.</span>
+                    }
+                  </div>
+                }
               </div>
-              <div class="flex gap-3 text-muted-foreground">
-                <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                <div>
-                  <p>{{ selectedSlot()?.start | date:'EEEE, MMMM d, yyyy' }}</p>
-                  <p>{{ selectedSlot()?.start | date:'h:mm a' }} - {{ selectedSlot()?.end | date:'h:mm a' }}</p>
+              
+              <div class="space-y-2">
+                <label for="email" class="text-sm font-medium">Email *</label>
+                <input type="email" id="email" [ngModel]="guestEmail()" (ngModelChange)="guestEmail.set($event)" name="email" required email maxlength="100" #emailInput="ngModel"
+                  [class.border-red-500]="emailInput.invalid && (emailInput.dirty || emailInput.touched)"
+                  [class.focus-visible:ring-red-500]="emailInput.invalid && (emailInput.dirty || emailInput.touched)"
+                  class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
+                  placeholder="john@example.com" />
+                @if (emailInput.invalid && (emailInput.dirty || emailInput.touched)) {
+                  <div class="text-xs text-red-500 font-medium animate-in fade-in duration-200">
+                    @if (emailInput.errors?.['required']) {
+                      <span>Email is required.</span>
+                    }
+                    @if (emailInput.errors?.['email']) {
+                      <span>Please enter a valid email address.</span>
+                    }
+                    @if (emailInput.errors?.['maxlength']) {
+                      <span>Email cannot exceed 100 characters.</span>
+                    }
+                  </div>
+                }
+              </div>
+              
+              <div class="space-y-2">
+                <div class="flex justify-between items-center">
+                  <label for="notes" class="text-sm font-medium">Please share anything that will help prepare for our meeting.</label>
+                  <span class="text-xs text-muted-foreground" [class.text-red-500]="(notes() || '').length >= 500">
+                    {{ (notes() || '').length }}/500
+                  </span>
+                </div>
+                <textarea id="notes" [ngModel]="notes()" (ngModelChange)="notes.set($event)" name="notes" rows="4" maxlength="500" #notesInput="ngModel"
+                  [class.border-red-500]="notesInput.invalid && (notesInput.dirty || notesInput.touched)"
+                  [class.focus-visible:ring-red-500]="notesInput.invalid && (notesInput.dirty || notesInput.touched)"
+                  class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  placeholder="Notes..."></textarea>
+                @if (notesInput.invalid && (notesInput.dirty || notesInput.touched)) {
+                  <div class="text-xs text-red-500 font-medium animate-in fade-in duration-200">
+                    @if (notesInput.errors?.['maxlength']) {
+                      <span>Notes cannot exceed 500 characters.</span>
+                    }
+                  </div>
+                }
+              </div>
+              
+              <div class="pt-4">
+                <button type="submit" [disabled]="isSubmitting() || bookingForm.invalid"
+                  class="px-6 py-2.5 rounded-md bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 disabled:pointer-events-none">
+                  @if (!isSubmitting()) {
+                    <span>Schedule Event</span>
+                  } @else {
+                    <span class="flex items-center gap-2">
+                      <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Scheduling...
+                    </span>
+                  }
+                </button>
+              </div>
+            </form>
+          </div>
+        }
+
+        <!-- STEP 3: Confirmed -->
+        @if (step() === 'confirmed') {
+          <div class="p-6 md:p-12 flex-grow flex flex-col items-center justify-center text-center animate-in zoom-in-95 duration-500">
+            <div class="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-6">
+              <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
+            </div>
+            <h2 class="text-2xl font-bold mb-2">You are scheduled</h2>
+            <p class="text-muted-foreground mb-8 max-w-sm">A calendar invitation has been sent to your email address.</p>
+            
+            <div class="border rounded-lg p-4 w-full max-w-sm text-left bg-muted/30">
+              <h3 class="font-medium mb-4">{{ meetingTypeName() }}</h3>
+              <div class="space-y-3 text-sm">
+                <div class="flex gap-3 text-muted-foreground">
+                  <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                  <span>{{ guestName() }}</span>
+                </div>
+                <div class="flex gap-3 text-muted-foreground">
+                  <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                  <div>
+                    <p>{{ selectedSlot()?.start | date:'EEEE, MMMM d, yyyy' }}</p>
+                    <p>{{ selectedSlot()?.start | date:'h:mm a' }} - {{ selectedSlot()?.end | date:'h:mm a' }}</p>
+                  </div>
                 </div>
               </div>
             </div>
+            
+            <div class="mt-8">
+              <a routerLink="/" class="text-sm font-medium text-primary hover:underline">Powered by Bookly</a>
+            </div>
           </div>
-          
-          <div class="mt-8">
-            <a routerLink="/" class="text-sm font-medium text-primary hover:underline">Powered by Bookly</a>
-          </div>
-        </div>
-      </ng-container>
+        }
 
+      </div>
     </div>
-  </div>
+  }
 </div>

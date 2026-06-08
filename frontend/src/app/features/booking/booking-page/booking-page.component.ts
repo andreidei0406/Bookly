@@ -1,5 +1,5 @@
 import { Component, signal, computed, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { AuthService, User } from '../../../core/services/auth.service';
@@ -16,7 +16,7 @@ interface TimeSlot {
 @Component({
   selector: 'app-booking-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [DatePipe, FormsModule, RouterModule],
   templateUrl: './booking-page.html',
   styleUrl: './booking-page.scss'
 })
@@ -112,12 +112,6 @@ export class BookingPageComponent {
   });
 
   constructor() {
-    // Get username from route
-    const usernameParam = this.route.snapshot.paramMap.get('username');
-    if (usernameParam) {
-      this.username.set(usernameParam);
-    }
-    
     // Read meeting name and duration from query params
     const meetingParam = this.route.snapshot.queryParamMap.get('meeting');
     if (meetingParam) {
@@ -131,17 +125,46 @@ export class BookingPageComponent {
       }
     }
 
-    if (this.username()) {
-      this.authService.getPublicProfile(this.username()).subscribe({
-        next: (res) => {
-          this.host.set(res.data);
-          this.fetchAvailableDaysForMonth(this.currentMonth());
-        },
-        error: (err) => {
-          console.error('Host not found', err);
-          this.router.navigate(['/']);
+    // Subscribe to paramMap to handle client-side parameter changes
+    if (this.route.paramMap) {
+      this.route.paramMap.subscribe(params => {
+        const usernameParam = params.get('username');
+        if (usernameParam) {
+          this.username.set(usernameParam);
+          this.authService.getPublicProfile(usernameParam).subscribe({
+            next: (res) => {
+              this.host.set(res.data);
+              sessionStorage.setItem('lastValidBookingUrl', this.router.url);
+              this.fetchAvailableDaysForMonth(this.currentMonth());
+            },
+            error: (err) => {
+              console.error('Host not found', err);
+              setTimeout(() => {
+                this.router.navigate(['/404'], { replaceUrl: true });
+              }, 0);
+            }
+          });
         }
       });
+    } else {
+      // Fallback for testing environments where paramMap is only mock-defined on snapshot
+      const usernameParam = this.route.snapshot.paramMap.get('username');
+      if (usernameParam) {
+        this.username.set(usernameParam);
+        this.authService.getPublicProfile(usernameParam).subscribe({
+          next: (res) => {
+            this.host.set(res.data);
+            sessionStorage.setItem('lastValidBookingUrl', this.router.url);
+            this.fetchAvailableDaysForMonth(this.currentMonth());
+          },
+          error: (err) => {
+            console.error('Host not found', err);
+            setTimeout(() => {
+              this.router.navigate(['/404'], { replaceUrl: true });
+            }, 0);
+          }
+        });
+      }
     }
   }
 

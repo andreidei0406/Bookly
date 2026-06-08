@@ -1,11 +1,10 @@
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-booking-success',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [RouterLink],
   template: `
     <div class="min-h-screen flex items-center justify-center bg-muted/20 p-4">
       <div class="bg-card rounded-xl shadow-glass-lg border border-border p-8 max-w-md w-full text-center space-y-6">

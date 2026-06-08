@@ -1,5 +1,4 @@
 import { Component, signal, inject, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
@@ -8,7 +7,7 @@ import { BillingService } from '../../../core/services/billing.service';
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule],
   template: `
     <div class="space-y-8">
       <div>
@@ -17,21 +16,25 @@ import { BillingService } from '../../../core/services/billing.service';
       </div>
 
       <!-- Payment Success Alert Banner -->
-      <div *ngIf="paymentSuccessMessage()" class="p-4 rounded-xl border border-emerald-200 bg-emerald-50/50 backdrop-blur-sm text-emerald-800 animate-in slide-in-from-top-5 duration-300 shadow-sm flex items-center gap-3">
-        <svg class="w-5 h-5 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        <div class="text-sm font-medium">{{ paymentSuccessMessage() }}</div>
-      </div>
+      @if (paymentSuccessMessage()) {
+        <div class="p-4 rounded-xl border border-emerald-200 bg-emerald-50/50 backdrop-blur-sm text-emerald-800 animate-in slide-in-from-top-5 duration-300 shadow-sm flex items-center gap-3">
+          <svg class="w-5 h-5 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <div class="text-sm font-medium">{{ paymentSuccessMessage() }}</div>
+        </div>
+      }
 
       <!-- Payment Verifying Loading Spinner -->
-      <div *ngIf="isVerifyingPayment()" class="p-8 rounded-xl border bg-card shadow-sm flex flex-col items-center justify-center gap-3 text-center">
-        <svg class="w-8 h-8 text-indigo-600 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-        </svg>
-        <span class="text-sm font-bold text-zinc-800">Verifying Payment Status...</span>
-        <p class="text-xs text-zinc-500">Please wait while we verify your purchase with Stripe.</p>
-      </div>
+      @if (isVerifyingPayment()) {
+        <div class="p-8 rounded-xl border bg-card shadow-sm flex flex-col items-center justify-center gap-3 text-center">
+          <svg class="w-8 h-8 text-indigo-600 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          <span class="text-sm font-bold text-zinc-800">Verifying Payment Status...</span>
+          <p class="text-xs text-zinc-500">Please wait while we verify your purchase with Stripe.</p>
+        </div>
+      }
 
       <!-- Subscription Plan Panel -->
       <div class="rounded-xl border bg-card text-card-foreground shadow-sm">
@@ -44,10 +47,13 @@ import { BillingService } from '../../../core/services/billing.service';
             
             <!-- Free Plan -->
             <div 
-              [ngClass]="{
-                'border-indigo-600 bg-indigo-50/10 ring-2 ring-indigo-500/10': currentUser()?.plan === 'FREE',
-                'border-border opacity-70 bg-zinc-50/30': currentUser()?.plan !== 'FREE'
-              }"
+              [class.border-indigo-600]="currentUser()?.plan === 'FREE'"
+              [class.bg-indigo-50/10]="currentUser()?.plan === 'FREE'"
+              [class.ring-2]="currentUser()?.plan === 'FREE'"
+              [class.ring-indigo-500/10]="currentUser()?.plan === 'FREE'"
+              [class.border-border]="currentUser()?.plan !== 'FREE'"
+              [class.opacity-70]="currentUser()?.plan !== 'FREE'"
+              [class.bg-zinc-50/30]="currentUser()?.plan !== 'FREE'"
               class="relative rounded-2xl border p-5 transition-all duration-300 flex flex-col justify-between group">
               <div>
                 <div class="flex justify-between items-start mb-3">
@@ -55,9 +61,11 @@ import { BillingService } from '../../../core/services/billing.service';
                     <h4 class="font-bold text-zinc-900">Free</h4>
                     <p class="text-xs text-zinc-400 mt-0.5">$0 / month</p>
                   </div>
-                  <span *ngIf="currentUser()?.plan === 'FREE'" class="inline-flex items-center gap-1 rounded-full bg-indigo-100 px-2.5 py-0.5 text-[10px] font-bold text-indigo-700">
-                    <span class="w-1 h-1 rounded-full bg-indigo-600"></span> Active
-                  </span>
+                  @if (currentUser()?.plan === 'FREE') {
+                    <span class="inline-flex items-center gap-1 rounded-full bg-indigo-100 px-2.5 py-0.5 text-[10px] font-bold text-indigo-700">
+                      <span class="w-1 h-1 rounded-full bg-indigo-600"></span> Active
+                    </span>
+                  }
                 </div>
                 <p class="text-xs text-zinc-500 leading-relaxed mb-4">Set your internal availability blocks on the dashboard.</p>
                 <ul class="text-[11px] text-zinc-600 space-y-2">
@@ -67,17 +75,25 @@ import { BillingService } from '../../../core/services/billing.service';
                 </ul>
               </div>
               <div class="mt-5 w-full py-2.5 rounded-xl text-xs font-bold text-center select-none"
-                   [ngClass]="currentUser()?.plan === 'FREE' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'bg-zinc-100 text-zinc-400'">
+                   [class.bg-indigo-50]="currentUser()?.plan === 'FREE'"
+                   [class.text-indigo-700]="currentUser()?.plan === 'FREE'"
+                   [class.border]="currentUser()?.plan === 'FREE'"
+                   [class.border-indigo-200]="currentUser()?.plan === 'FREE'"
+                   [class.bg-zinc-100]="currentUser()?.plan !== 'FREE'"
+                   [class.text-zinc-400]="currentUser()?.plan !== 'FREE'">
                 {{ currentUser()?.plan === 'FREE' ? 'Current Plan' : 'Not Active' }}
               </div>
             </div>
  
             <!-- Premium Plan -->
             <div 
-              [ngClass]="{
-                'border-indigo-600 bg-indigo-50/10 ring-2 ring-indigo-500/10': currentUser()?.plan === 'PREMIUM',
-                'border-border opacity-70 bg-zinc-50/30': currentUser()?.plan !== 'PREMIUM'
-              }"
+              [class.border-indigo-600]="currentUser()?.plan === 'PREMIUM'"
+              [class.bg-indigo-50/10]="currentUser()?.plan === 'PREMIUM'"
+              [class.ring-2]="currentUser()?.plan === 'PREMIUM'"
+              [class.ring-indigo-500/10]="currentUser()?.plan === 'PREMIUM'"
+              [class.border-border]="currentUser()?.plan !== 'PREMIUM'"
+              [class.opacity-70]="currentUser()?.plan !== 'PREMIUM'"
+              [class.bg-zinc-50/30]="currentUser()?.plan !== 'PREMIUM'"
               class="relative rounded-2xl border p-5 transition-all duration-300 flex flex-col justify-between group">
               <div>
                 <div class="flex justify-between items-start mb-3">
@@ -85,9 +101,11 @@ import { BillingService } from '../../../core/services/billing.service';
                     <h4 class="font-bold text-zinc-900">Premium</h4>
                     <p class="text-xs text-zinc-400 mt-0.5">$9 / month</p>
                   </div>
-                  <span *ngIf="currentUser()?.plan === 'PREMIUM'" class="inline-flex items-center gap-1 rounded-full bg-indigo-100 px-2.5 py-0.5 text-[10px] font-bold text-indigo-700">
-                    <span class="w-1 h-1 rounded-full bg-indigo-600"></span> Active
-                  </span>
+                  @if (currentUser()?.plan === 'PREMIUM') {
+                    <span class="inline-flex items-center gap-1 rounded-full bg-indigo-100 px-2.5 py-0.5 text-[10px] font-bold text-indigo-700">
+                      <span class="w-1 h-1 rounded-full bg-indigo-600"></span> Active
+                    </span>
+                  }
                 </div>
                 <p class="text-xs text-zinc-500 leading-relaxed mb-4">Share booking links and receive secure bookings from guests.</p>
                 <ul class="text-[11px] text-zinc-600 space-y-2">
@@ -98,36 +116,52 @@ import { BillingService } from '../../../core/services/billing.service';
               </div>
 
               <!-- Button / Inactive state for Premium -->
-              <button *ngIf="currentUser()?.plan === 'FREE'"
-                      (click)="upgradePlan('PREMIUM')"
-                      class="mt-5 w-full py-2.5 rounded-xl text-xs font-bold text-center bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/10 transition-colors cursor-pointer">
-                Upgrade to Premium ($9)
-              </button>
-              <div *ngIf="currentUser()?.plan !== 'FREE'"
-                   class="mt-5 w-full py-2.5 rounded-xl text-xs font-bold text-center select-none"
-                   [ngClass]="currentUser()?.plan === 'PREMIUM' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'bg-zinc-100 text-zinc-400'">
-                {{ currentUser()?.plan === 'PREMIUM' ? 'Current Plan' : 'Not Active' }}
-              </div>
+              @if (currentUser()?.plan === 'FREE') {
+                <button (click)="upgradePlan('PREMIUM')"
+                        class="mt-5 w-full py-2.5 rounded-xl text-xs font-bold text-center bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/10 transition-colors cursor-pointer">
+                  Upgrade to Premium ($9)
+                </button>
+              }
+              @if (currentUser()?.plan !== 'FREE') {
+                <div class="mt-5 w-full py-2.5 rounded-xl text-xs font-bold text-center select-none"
+                     [class.bg-indigo-50]="currentUser()?.plan === 'PREMIUM'"
+                     [class.text-indigo-700]="currentUser()?.plan === 'PREMIUM'"
+                     [class.border]="currentUser()?.plan === 'PREMIUM'"
+                     [class.border-indigo-200]="currentUser()?.plan === 'PREMIUM'"
+                     [class.bg-zinc-100]="currentUser()?.plan !== 'PREMIUM'"
+                     [class.text-zinc-400]="currentUser()?.plan !== 'PREMIUM'">
+                  {{ currentUser()?.plan === 'PREMIUM' ? 'Current Plan' : 'Not Active' }}
+                </div>
+              }
             </div>
  
             <!-- Ultimate Plan -->
             <div 
-              [ngClass]="{
-                'border-indigo-600 bg-indigo-50/20 ring-2 ring-indigo-500/20': currentUser()?.plan === 'ULTIMATE',
-                'border-border opacity-70 bg-zinc-50/30': currentUser()?.plan !== 'ULTIMATE'
-              }"
+              [class.border-indigo-600]="currentUser()?.plan === 'ULTIMATE'"
+              [class.bg-indigo-50/20]="currentUser()?.plan === 'ULTIMATE'"
+              [class.ring-2]="currentUser()?.plan === 'ULTIMATE'"
+              [class.ring-indigo-500/20]="currentUser()?.plan === 'ULTIMATE'"
+              [class.border-border]="currentUser()?.plan !== 'ULTIMATE'"
+              [class.opacity-70]="currentUser()?.plan !== 'ULTIMATE'"
+              [class.bg-zinc-50/30]="currentUser()?.plan !== 'ULTIMATE'"
               class="relative rounded-2xl border p-5 transition-all duration-300 flex flex-col justify-between group">
-              <div *ngIf="currentUser()?.plan === 'ULTIMATE'" class="absolute -top-3 right-4 bg-indigo-600 text-white text-[9px] font-extrabold uppercase px-2.5 py-1 rounded-full tracking-widest shadow-md shadow-indigo-600/15">Active Plan</div>
-              <div *ngIf="currentUser()?.plan !== 'ULTIMATE'" class="absolute -top-3 right-4 bg-zinc-500 text-white text-[9px] font-extrabold uppercase px-2.5 py-1 rounded-full tracking-widest">Best Value</div>
+              @if (currentUser()?.plan === 'ULTIMATE') {
+                <div class="absolute -top-3 right-4 bg-indigo-600 text-white text-[9px] font-extrabold uppercase px-2.5 py-1 rounded-full tracking-widest shadow-md shadow-indigo-600/15">Active Plan</div>
+              }
+              @if (currentUser()?.plan !== 'ULTIMATE') {
+                <div class="absolute -top-3 right-4 bg-zinc-500 text-white text-[9px] font-extrabold uppercase px-2.5 py-1 rounded-full tracking-widest">Best Value</div>
+              }
               <div>
                 <div class="flex justify-between items-start mb-3">
                   <div>
                     <h4 class="font-bold text-zinc-900">Ultimate</h4>
                     <p class="text-xs text-zinc-400 mt-0.5">$19 / month</p>
                   </div>
-                  <span *ngIf="currentUser()?.plan === 'ULTIMATE'" class="inline-flex items-center gap-1 rounded-full bg-indigo-100 px-2.5 py-0.5 text-[10px] font-bold text-indigo-700">
-                    <span class="w-1 h-1 rounded-full bg-indigo-600"></span> Active
-                  </span>
+                  @if (currentUser()?.plan === 'ULTIMATE') {
+                    <span class="inline-flex items-center gap-1 rounded-full bg-indigo-100 px-2.5 py-0.5 text-[10px] font-bold text-indigo-700">
+                      <span class="w-1.5 h-1.5 rounded-full bg-indigo-600"></span> Active
+                    </span>
+                  }
                 </div>
                 <p class="text-xs text-zinc-500 leading-relaxed mb-4">Complete scheduling suite with Google Calendar and Meet integrations.</p>
                 <ul class="text-[11px] text-zinc-600 space-y-2">
@@ -138,15 +172,17 @@ import { BillingService } from '../../../core/services/billing.service';
               </div>
 
               <!-- Button / Inactive state for Ultimate -->
-              <button *ngIf="currentUser()?.plan === 'FREE' || currentUser()?.plan === 'PREMIUM'"
-                      (click)="upgradePlan('ULTIMATE')"
-                      class="mt-5 w-full py-2.5 rounded-xl text-xs font-bold text-center bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/10 transition-colors cursor-pointer">
-                Upgrade to Ultimate ($19)
-              </button>
-              <div *ngIf="currentUser()?.plan === 'ULTIMATE'"
-                   class="mt-5 w-full py-2.5 rounded-xl text-xs font-bold text-center select-none bg-indigo-50 text-indigo-700 border border-indigo-200">
-                Current Active Plan
-              </div>
+              @if (currentUser()?.plan === 'FREE' || currentUser()?.plan === 'PREMIUM') {
+                <button (click)="upgradePlan('ULTIMATE')"
+                        class="mt-5 w-full py-2.5 rounded-xl text-xs font-bold text-center bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/10 transition-colors cursor-pointer">
+                  Upgrade to Ultimate ($19)
+                </button>
+              }
+              @if (currentUser()?.plan === 'ULTIMATE') {
+                <div class="mt-5 w-full py-2.5 rounded-xl text-xs font-bold text-center select-none bg-indigo-50 text-indigo-700 border border-indigo-200">
+                  Current Active Plan
+                </div>
+              }
             </div>
  
           </div>
@@ -165,14 +201,16 @@ import { BillingService } from '../../../core/services/billing.service';
           <div class="rounded-xl border border-border p-4 bg-slate-50/50 hover:bg-slate-50 transition-colors relative overflow-hidden">
             
             <!-- Lock Overlay for Free/Premium users (bypassed if already connected so user can disconnect) -->
-            <div *ngIf="currentUser()?.plan !== 'ULTIMATE' && !(currentUser()?.googleId || currentUser()?.googleAccessToken)" class="absolute inset-0 bg-white/80 backdrop-blur-[1px] z-10 flex flex-col items-center justify-center p-4 text-center animate-in fade-in duration-300">
-              <svg class="w-6 h-6 text-indigo-600 mb-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-              </svg>
-              <span class="text-xs font-bold text-zinc-800">Requires Ultimate Plan</span>
-              <p class="text-[10px] text-zinc-500 max-w-xs mt-1">Sync Bookly with Google Calendar and auto-generate Google Meet links.</p>
-              <button (click)="upgradePlan('ULTIMATE')" class="mt-3 text-[10px] font-bold text-white bg-indigo-600 hover:bg-indigo-700 px-3 py-1.5 rounded-lg shadow-sm cursor-pointer">Upgrade to Ultimate</button>
-            </div>
+            @if (currentUser()?.plan !== 'ULTIMATE' && !(currentUser()?.googleId || currentUser()?.googleAccessToken)) {
+              <div class="absolute inset-0 bg-white/80 backdrop-blur-[1px] z-10 flex flex-col items-center justify-center p-4 text-center animate-in fade-in duration-300">
+                <svg class="w-6 h-6 text-indigo-600 mb-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                <span class="text-xs font-bold text-zinc-800">Requires Ultimate Plan</span>
+                <p class="text-[10px] text-zinc-500 max-w-xs mt-1">Sync Bookly with Google Calendar and auto-generate Google Meet links.</p>
+                <button (click)="upgradePlan('ULTIMATE')" class="mt-3 text-[10px] font-bold text-white bg-indigo-600 hover:bg-indigo-700 px-3 py-1.5 rounded-lg shadow-sm cursor-pointer">Upgrade to Ultimate</button>
+              </div>
+            }
 
             <div class="flex items-center justify-between gap-4">
               <div class="flex items-center gap-3">
@@ -181,31 +219,39 @@ import { BillingService } from '../../../core/services/billing.service';
                 </div>
                 <div>
                   <h4 class="text-sm font-semibold text-foreground">Google Calendar & Meet</h4>
-                  <span *ngIf="currentUser()?.googleId || currentUser()?.googleAccessToken" class="inline-flex items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 text-[10px] font-medium text-green-700 mt-1 border border-green-200">
-                    <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-                    Connected
-                  </span>
-                  <span *ngIf="!(currentUser()?.googleId || currentUser()?.googleAccessToken)" class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600 mt-1 border border-slate-200">
-                    <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
-                    Not Connected
-                  </span>
+                  @if (currentUser()?.googleId || currentUser()?.googleAccessToken) {
+                    <span class="inline-flex items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 text-[10px] font-medium text-green-700 mt-1 border border-green-200">
+                      <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                      Connected
+                    </span>
+                  }
+                  @if (!(currentUser()?.googleId || currentUser()?.googleAccessToken)) {
+                    <span class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600 mt-1 border border-slate-200">
+                      <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                      Not Connected
+                    </span>
+                  }
                 </div>
               </div>
               
-              <div *ngIf="!(currentUser()?.googleId || currentUser()?.googleAccessToken)" class="shrink-0">
-                <button 
-                  (click)="connectGoogle()"
-                  class="inline-flex items-center justify-center rounded-lg text-xs font-semibold transition-colors border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground h-8 px-3">
-                  Connect
-                </button>
-              </div>
-              <div *ngIf="currentUser()?.googleId || currentUser()?.googleAccessToken" class="shrink-0">
-                <button 
-                  (click)="disconnectGoogle()"
-                  class="inline-flex items-center justify-center rounded-lg text-xs font-semibold transition-colors border border-transparent bg-destructive/10 text-destructive hover:bg-destructive/20 h-8 px-3">
-                  Disconnect
-                </button>
-              </div>
+              @if (!(currentUser()?.googleId || currentUser()?.googleAccessToken)) {
+                <div class="shrink-0">
+                  <button 
+                    (click)="connectGoogle()"
+                    class="inline-flex items-center justify-center rounded-lg text-xs font-semibold transition-colors border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground h-8 px-3">
+                    Connect
+                  </button>
+                </div>
+              }
+              @if (currentUser()?.googleId || currentUser()?.googleAccessToken) {
+                <div class="shrink-0">
+                  <button 
+                    (click)="disconnectGoogle()"
+                    class="inline-flex items-center justify-center rounded-lg text-xs font-semibold transition-colors border border-transparent bg-destructive/10 text-destructive hover:bg-destructive/20 h-8 px-3">
+                    Disconnect
+                  </button>
+                </div>
+              }
             </div>
             <div class="mt-3 text-xs text-muted-foreground leading-relaxed pl-[52px]">
               Sync bookings to your calendar and automatically generate Google Meet video conference links for guests.

@@ -43,6 +43,7 @@ describe('BookingPage', () => {
         {
           provide: ActivatedRoute,
           useValue: {
+            paramMap: of(convertToParamMap({ username: 'testuser' })),
             snapshot: {
               paramMap: convertToParamMap({ username: 'testuser' }),
               queryParamMap: convertToParamMap({ meeting: 'Intro', duration: '30' })

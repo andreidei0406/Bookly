@@ -1,5 +1,5 @@
 import { Component, OnInit, signal, computed, ViewChild, ElementRef, inject, ChangeDetectorRef, NgZone, HostListener } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FullCalendarModule, FullCalendarComponent } from '@fullcalendar/angular';
 import { CalendarOptions, EventClickArg } from '@fullcalendar/core';
@@ -23,7 +23,7 @@ type DashboardTab = 'calendar' | 'bookings' | 'profile';
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, FullCalendarModule, SettingsComponent, BookingsListComponent],
+  imports: [DatePipe, FormsModule, FullCalendarModule, SettingsComponent, BookingsListComponent],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
 })
