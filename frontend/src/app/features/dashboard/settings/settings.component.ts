@@ -1,4 +1,4 @@
-import { Component, signal, inject, OnInit } from '@angular/core';
+import { Component, signal, inject, OnInit, NgZone } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
@@ -64,7 +64,7 @@ import { environment } from '../../../../environments/environment';
                   </div>
                   @if (currentUser()?.plan === 'FREE') {
                     <span class="inline-flex items-center gap-1 rounded-full bg-indigo-100 px-2.5 py-0.5 text-[10px] font-bold text-indigo-700">
-                      <span class="w-1 h-1 rounded-full bg-indigo-600"></span> Active
+                      <span class="w-1.5 h-1.5 rounded-full bg-indigo-600"></span> Active
                     </span>
                   }
                 </div>
@@ -104,7 +104,7 @@ import { environment } from '../../../../environments/environment';
                   </div>
                   @if (currentUser()?.plan === 'PREMIUM') {
                     <span class="inline-flex items-center gap-1 rounded-full bg-indigo-100 px-2.5 py-0.5 text-[10px] font-bold text-indigo-700">
-                      <span class="w-1 h-1 rounded-full bg-indigo-600"></span> Active
+                      <span class="w-1.5 h-1.5 rounded-full bg-indigo-600"></span> Active
                     </span>
                   }
                 </div>
@@ -269,6 +269,7 @@ export class SettingsComponent implements OnInit {
   private billingService = inject(BillingService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private ngZone = inject(NgZone);
 
   currentUser = this.authService.currentUser;
   isVerifyingPayment = signal(false);
@@ -291,12 +292,13 @@ export class SettingsComponent implements OnInit {
         this.isVerifyingPayment.set(false);
         this.authService.setSession(res.data);
         this.paymentSuccessMessage.set(res.message);
-
-        // Clean query parameters from URL
-        this.router.navigate([], {
-          relativeTo: this.route,
-          queryParams: { session_id: null, success: null, plan: null },
-          queryParamsHandling: 'merge'
+        // Clean query parameters from URL inside NgZone
+        this.ngZone.run(() => {
+          this.router.navigate([], {
+            relativeTo: this.route,
+            queryParams: { session_id: null, success: null, plan: null },
+            queryParamsHandling: 'merge'
+          });
         });
 
         // Clear toast after 6 seconds

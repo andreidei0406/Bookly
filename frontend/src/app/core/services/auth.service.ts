@@ -1,4 +1,4 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, signal, NgZone } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { tap, catchError } from 'rxjs/operators';
@@ -26,7 +26,7 @@ export class AuthService {
   readonly currentUser = signal<User | null>(null);
   readonly isAuthenticated = signal<boolean>(false);
 
-  constructor(private http: HttpClient, private router: Router) {
+  constructor(private http: HttpClient, private router: Router, private ngZone: NgZone) {
   }
 
   /**
@@ -89,7 +89,9 @@ export class AuthService {
     
     // Only redirect to landing page if currently inside the protected dashboard area
     if (this.router.url.includes('/dashboard')) {
-      this.router.navigate([redirectUrl]);
+      this.ngZone.run(() => {
+        this.router.navigate([redirectUrl]);
+      });
     }
   }
 

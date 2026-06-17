@@ -23,7 +23,7 @@ spec:
       containers:
       - name: api
         image: GCP_ARTIFACT_REGISTRY_IMAGE_PLACEHOLDER # Will be dynamically updated by the deployment script
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         ports:
         - name: http
           containerPort: 3000

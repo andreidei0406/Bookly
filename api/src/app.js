@@ -18,13 +18,20 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+app.set('trust proxy', true);
+
+/** HTTP request logging */
+app.use(pinoHttp({ logger }));
 
 // ---------------------------------------------------------------------------
 // Global middleware
 // ---------------------------------------------------------------------------
 
-/** Security headers */
-app.use(helmet());
+/** Security headers (CSP and HSTS disabled to allow HTTP localhost access and Angular assets) */
+app.use(helmet({
+  contentSecurityPolicy: false,
+  hsts: false,
+}));
 
 /** CORS */
 app.use(
@@ -46,14 +53,8 @@ app.use(express.json({
 }));
 app.use(express.urlencoded({ extended: true }));
 
-/** HTTP request logging */
-app.use(pinoHttp({ logger }));
-
-/** Global rate limiter */
-app.use(globalLimiter);
-
 // ---------------------------------------------------------------------------
-// Health check
+// Health check (before rate limiter — K8s probes must not be throttled)
 // ---------------------------------------------------------------------------
 
 /**
@@ -75,6 +76,9 @@ app.get('/health', async (_req, res, next) => {
     );
   }
 });
+
+/** Global rate limiter - only applied to API routes */
+app.use('/api', globalLimiter);
 
 // ---------------------------------------------------------------------------
 // API routes

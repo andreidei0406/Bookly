@@ -12,16 +12,18 @@ import { verifyAccessToken, verifyStateToken } from '../utils/tokens.js';
 export const register = catchAsync(async (req, res) => {
   const result = await authService.register(req.body);
   
+  const isSecure = req.secure || req.headers['x-forwarded-proto'] === 'https';
+
   res.cookie('accessToken', result.accessToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: isSecure,
     sameSite: 'lax',
     maxAge: 15 * 60 * 1000 // 15 minutes
   });
 
   res.cookie('refreshToken', result.refreshToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: isSecure,
     sameSite: 'lax',
     path: '/',
     maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
@@ -37,9 +39,11 @@ export const register = catchAsync(async (req, res) => {
 export const login = catchAsync(async (req, res) => {
   const result = await authService.login(req.body);
   
+  const isSecure = req.secure || req.headers['x-forwarded-proto'] === 'https';
+
   res.cookie('accessToken', result.accessToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: isSecure,
     sameSite: 'lax',
     path: '/',
     maxAge: 15 * 60 * 1000 // 15 minutes
@@ -47,7 +51,7 @@ export const login = catchAsync(async (req, res) => {
 
   res.cookie('refreshToken', result.refreshToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: isSecure,
     sameSite: 'lax',
     path: '/',
     maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
@@ -68,9 +72,11 @@ export const refreshToken = catchAsync(async (req, res) => {
 
   const result = await authService.refreshToken({ refreshToken: token });
   
+  const isSecure = req.secure || req.headers['x-forwarded-proto'] === 'https';
+
   res.cookie('accessToken', result.accessToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: isSecure,
     sameSite: 'lax',
     path: '/',
     maxAge: 15 * 60 * 1000 // 15 minutes
@@ -78,7 +84,7 @@ export const refreshToken = catchAsync(async (req, res) => {
 
   res.cookie('refreshToken', result.refreshToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: isSecure,
     sameSite: 'lax',
     path: '/',
     maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
@@ -93,9 +99,20 @@ export const refreshToken = catchAsync(async (req, res) => {
  * @route POST /api/v1/auth/logout
  */
 export const logout = catchAsync(async (req, res) => {
-  await authService.logout(req.user.id);
-  res.clearCookie('accessToken');
-  res.clearCookie('refreshToken');
+  const refreshToken = req.cookies?.refreshToken;
+  await authService.logout({ refreshToken });
+
+  const isSecure = req.secure || req.headers['x-forwarded-proto'] === 'https';
+  res.clearCookie('accessToken', {
+    httpOnly: true,
+    secure: isSecure,
+    sameSite: 'lax',
+  });
+  res.clearCookie('refreshToken', {
+    httpOnly: true,
+    secure: isSecure,
+    sameSite: 'lax',
+  });
   return noContent(res);
 });
 
@@ -151,22 +168,27 @@ export const googleCallback = catchAsync(async (req, res) => {
   }
 
 
-  const frontendUrl = process.env.CORS_ORIGIN || 'http://localhost:4200';
+  // Dynamically determine the base URL from the incoming request (supports same-origin GKE IP and localhost port-forward)
+  const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+  const host = req.get('host');
+  const baseUrl = `${protocol}://${host}`;
 
   if (currentUserId) {
     // 1. LINKING FLOW: User is already logged in, connect Google to their current Bookly session
     await authService.linkGoogleAccount(currentUserId, googleData);
     
     // Redirect back to settings page directly
-    const redirectUrl = new URL(`${frontendUrl}/dashboard/settings`);
+    const redirectUrl = new URL(`${baseUrl}/dashboard/settings`);
     res.redirect(redirectUrl.toString());
   } else {
     // 2. SIGN IN / LOGIN FLOW: Standard OAuth sign-in flow
     const result = await authService.googleLogin(googleData);
     
+    const isSecure = req.secure || req.headers['x-forwarded-proto'] === 'https';
+
     res.cookie('accessToken', result.accessToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: isSecure,
       sameSite: 'lax', // Must be lax or none for OAuth redirect back
       path: '/',
       maxAge: 15 * 60 * 1000 // 15 minutes
@@ -174,13 +196,13 @@ export const googleCallback = catchAsync(async (req, res) => {
 
     res.cookie('refreshToken', result.refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: isSecure,
       sameSite: 'lax',
       path: '/',
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
     
-    const redirectUrl = new URL(`${frontendUrl}/dashboard`);
+    const redirectUrl = new URL(`${baseUrl}/dashboard`);
     res.redirect(redirectUrl.toString());
   }
 });
