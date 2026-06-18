@@ -8,15 +8,15 @@ import { AuthService } from '../../core/services/auth.service';
   standalone: true,
   imports: [RouterModule],
   template: `
-    <div class="min-h-screen bg-[#f8fafc] flex items-center justify-center p-4 relative overflow-hidden">
+    <div class="min-h-screen bg-card sm:bg-[#f8fafc] flex items-center justify-center p-0 sm:p-4 relative overflow-hidden">
       
       <!-- Premium Animated Pastel Mesh Background -->
-      <div class="mesh-container">
+      <div class="mesh-container hidden sm:block">
         <div class="glow-blob blob-indigo"></div>
         <div class="glow-blob blob-purple"></div>
       </div>
       
-      <div class="w-full max-w-md premium-glass-card rounded-3xl p-8 border border-slate-200/80 relative overflow-hidden z-10">
+      <div class="w-full max-w-md bg-card sm:premium-glass-card rounded-none sm:rounded-3xl p-6 sm:p-8 border-0 sm:border border-slate-200/80 relative overflow-hidden z-10 min-h-screen sm:min-h-0 flex flex-col justify-center">
         
         <div class="relative z-10 space-y-6">
           

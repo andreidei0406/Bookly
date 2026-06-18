@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, NgZone, ChangeDetectorRef } from '@angular/core';
 import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AuthService } from '../../../core/services/auth.service';
@@ -15,9 +15,12 @@ export class RegisterComponent implements OnInit {
   private authService = inject(AuthService);
   private fb = inject(FormBuilder);
   private route = inject(ActivatedRoute);
+  private ngZone = inject(NgZone);
+  private cdr = inject(ChangeDetectorRef);
   
   errorMsg = '';
   isSubmitting = false;
+  fieldErrors: Record<string, string> = {};
 
   ngOnInit() {
     this.route.queryParams.subscribe(params => {
@@ -59,11 +62,44 @@ export class RegisterComponent implements OnInit {
     
     this.isSubmitting = true;
     this.errorMsg = '';
+    this.fieldErrors = {};
     
     this.authService.register(this.registerForm.value).subscribe({
+      next: (res) => {
+        // tap handles navigation
+      },
       error: (err) => {
-        this.errorMsg = err.error?.error || err.error?.message || 'Registration failed. Check that your password contains 8+ characters with uppercase, lowercase, number, and special character.';
-        this.isSubmitting = false;
+        this.ngZone.run(() => {
+          this.isSubmitting = false;
+          const errorData = err.error;
+          
+          if (errorData) {
+            if (errorData.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+              // Zod Validation failure
+              this.errorMsg = errorData.message || 'Validation failed';
+              errorData.errors.forEach((e: any) => {
+                const fieldName = e.field.replace('body.', '');
+                this.fieldErrors[fieldName] = e.message;
+              });
+            } else if (err.status === 409) {
+              // Conflict (e.g. Email exists)
+              const msg = errorData.message || 'A user with this email already exists';
+              this.errorMsg = msg;
+              if (msg.toLowerCase().includes('email')) {
+                this.fieldErrors['email'] = msg;
+              } else if (msg.toLowerCase().includes('username')) {
+                this.fieldErrors['username'] = msg;
+              }
+            } else {
+              this.errorMsg = errorData.message || 'Registration failed. Please try again.';
+            }
+          } else {
+            this.errorMsg = 'Failed to connect to the authentication service. Please check your network.';
+          }
+          
+          // Force change detection immediately
+          this.cdr.detectChanges();
+        });
       }
     });
   }

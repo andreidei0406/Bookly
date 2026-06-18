@@ -5,9 +5,9 @@ import { Component } from '@angular/core';
   standalone: true,
   imports: [],
   template: `
-    <div class="min-h-screen flex items-center justify-center bg-muted/20 p-4">
-      <div class="bg-card rounded-xl shadow-glass-lg border border-border p-8 max-w-md w-full text-center space-y-6">
-        <div class="mx-auto w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-6">
+    <div class="min-h-screen flex items-center justify-center bg-card sm:bg-muted/20 p-0 sm:p-4">
+      <div class="bg-card rounded-none sm:rounded-xl shadow-none sm:shadow-glass-lg border-0 sm:border border-border p-6 sm:p-8 max-w-md w-full min-h-screen sm:min-h-0 flex flex-col justify-center text-center space-y-6">
+        <div class="mx-auto w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-2 sm:mb-6 shrink-0">
           <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12" />
           </svg>
@@ -18,7 +18,7 @@ import { Component } from '@angular/core';
           The payment process was cancelled or failed. Your booking has not been confirmed.
         </p>
         
-        <div class="pt-4">
+        <div class="pt-4 shrink-0">
           <button (click)="goBack()" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground h-10 px-8 py-2 w-full">
             Try Again
           </button>

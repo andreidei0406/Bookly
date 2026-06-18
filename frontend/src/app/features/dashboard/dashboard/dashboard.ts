@@ -64,9 +64,6 @@ export class Dashboard implements OnInit {
     if (!user) return '';
     const username = user.username;
     let origin = window.location.origin;
-    if (origin.includes('localhost:3000')) {
-      origin = 'https://bookly-eouux2hhya-uc.a.run.app';
-    }
     let url = `${origin}/booking/${username}`;
     const name = this.meetingName().trim();
     const duration = this.meetingDuration();

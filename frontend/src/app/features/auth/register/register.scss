@@ -131,6 +131,22 @@
     width: 16px !important;
     height: 16px !important;
   }
+
+  // Error state
+  &.input-error {
+    .premium-input {
+      border-color: #f87171;
+      background: rgba(254, 242, 242, 0.6);
+      
+      &:focus {
+        border-color: #ef4444;
+        box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.15), 0 4px 12px rgba(0, 0, 0, 0.03);
+      }
+    }
+    .input-icon {
+      color: #f87171;
+    }
+  }
 }
 
 // Password requirement checklist container
