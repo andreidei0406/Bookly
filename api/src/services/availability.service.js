@@ -175,13 +175,58 @@ export async function updateBlock(userId, blockId, data) {
     throw ApiError.badRequest('Cannot update availability blocks to a past date');
   }
 
-  return prisma.availabilityBlock.update({
-    where: { id: blockId, userId },
-    data: {
-      date,
-      startTime: data.startTime,
-      endTime: data.endTime
+  const startMins = timeToMinutes(data.startTime);
+  const endMins = timeToMinutes(data.endTime);
+
+  return prisma.$transaction(async (tx) => {
+    // 1. Fetch other existing blocks on the target date (excluding the one being updated)
+    const existingBlocks = await tx.availabilityBlock.findMany({
+      where: {
+        userId,
+        date,
+        id: { not: blockId }
+      }
+    });
+
+    // 2. Find overlaps or adjacencies
+    const overlapping = [];
+    for (const b of existingBlocks) {
+      const bStart = timeToMinutes(b.startTime);
+      const bEnd = timeToMinutes(b.endTime);
+
+      // touching or overlapping condition
+      if (bEnd >= startMins && bStart <= endMins) {
+        overlapping.push({ id: b.id, start: bStart, end: bEnd });
+      }
     }
+
+    // 3. Compute merged boundaries
+    let mergedStart = startMins;
+    let mergedEnd = endMins;
+
+    for (const b of overlapping) {
+      mergedStart = Math.min(mergedStart, b.start);
+      mergedEnd = Math.max(mergedEnd, b.end);
+    }
+
+    // 4. Delete the other overlapping blocks
+    if (overlapping.length > 0) {
+      await tx.availabilityBlock.deleteMany({
+        where: {
+          id: { in: overlapping.map(o => o.id) }
+        }
+      });
+    }
+
+    // 5. Update the current block with the new merged boundaries
+    return tx.availabilityBlock.update({
+      where: { id: blockId, userId },
+      data: {
+        date,
+        startTime: minutesToTime(mergedStart),
+        endTime: minutesToTime(mergedEnd)
+      }
+    });
   });
 }
 
