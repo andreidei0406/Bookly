@@ -37,6 +37,8 @@ export const createCheckoutSession = catchAsync(async (req, res) => {
   // Calculate pricing in cents
   const amount = plan === 'PREMIUM' ? 900 : 1900; // $9 or $19
 
+  const origin = req.get('origin') || config.cors.origin;
+
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ['card'],
     line_items: [
@@ -55,8 +57,8 @@ export const createCheckoutSession = catchAsync(async (req, res) => {
       },
     ],
     mode: 'payment',
-    success_url: `${config.cors.origin}/dashboard/settings?session_id={CHECKOUT_SESSION_ID}&success=true&plan=${plan}`,
-    cancel_url: `${config.cors.origin}/dashboard/settings`,
+    success_url: `${origin}/dashboard/settings?session_id={CHECKOUT_SESSION_ID}&success=true&plan=${plan}`,
+    cancel_url: `${origin}/dashboard/settings`,
     metadata: {
       userId: user.id,
       plan: plan,

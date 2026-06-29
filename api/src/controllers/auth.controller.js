@@ -70,7 +70,7 @@ export const refreshToken = catchAsync(async (req, res) => {
     return res.status(401).json({ error: 'Refresh token missing' });
   }
 
-  const result = await authService.refreshToken({ refreshToken: token });
+  const result = await authService.refreshTokens({ refreshToken: token });
   
   const isSecure = req.secure || req.headers['x-forwarded-proto'] === 'https';
 
