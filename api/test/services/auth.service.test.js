@@ -133,10 +133,10 @@ describe('Auth Service', () => {
         id: 'stored_token_abc',
         userId: 'user_123',
         expiresAt: new Date(Date.now() + 100000),
-        revoked: false
+        isRevoked: false
       });
 
-      prisma.refreshToken.update.mockResolvedValue({ id: 'stored_token_abc', revoked: true });
+      prisma.refreshToken.update.mockResolvedValue({ id: 'stored_token_abc', isRevoked: true });
       prisma.user.findUnique.mockResolvedValue({
         id: 'user_123',
         email: 'test@example.com',
@@ -151,7 +151,7 @@ describe('Auth Service', () => {
       expect(result.refreshToken).toBeDefined();
       expect(prisma.refreshToken.update).toHaveBeenCalledWith({
         where: { id: 'stored_token_abc' },
-        data: { revoked: true }
+        data: { isRevoked: true }
       });
     });
 
@@ -185,15 +185,15 @@ describe('Auth Service', () => {
       prisma.refreshToken.findFirst.mockResolvedValue({
         id: 'stored_token_abc',
         userId: 'user_123',
-        revoked: false
+        isRevoked: false
       });
 
-      prisma.refreshToken.update.mockResolvedValue({ id: 'stored_token_abc', revoked: true });
+      prisma.refreshToken.update.mockResolvedValue({ id: 'stored_token_abc', isRevoked: true });
 
       await expect(logout({ refreshToken: token })).resolves.not.toThrow();
       expect(prisma.refreshToken.update).toHaveBeenCalledWith({
         where: { id: 'stored_token_abc' },
-        data: { revoked: true }
+        data: { isRevoked: true }
       });
     });
 
@@ -241,8 +241,8 @@ describe('Auth Service', () => {
         data: { password: 'new_hash_mock' }
       });
       expect(prisma.refreshToken.updateMany).toHaveBeenCalledWith({
-        where: { userId: 'user_123', revoked: false },
-        data: { revoked: true }
+        where: { userId: 'user_123', isRevoked: false },
+        data: { isRevoked: true }
       });
     });
 

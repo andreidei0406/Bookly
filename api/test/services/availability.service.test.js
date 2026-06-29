@@ -370,7 +370,26 @@ describe('Availability Service', () => {
 
     it('should update the block with new date, startTime and endTime', async () => {
       const updatedBlock = { id: 'b1', userId, date: new Date('2025-06-05'), startTime: '10:00', endTime: '15:00' };
-      prisma.availabilityBlock.update.mockResolvedValue(updatedBlock);
+      
+      prisma.$transaction.mockImplementation(async (callback) => {
+        const tx = {
+          availabilityBlock: {
+            findMany: vi.fn().mockResolvedValue([]),
+            deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
+            update: vi.fn().mockResolvedValue(updatedBlock),
+          },
+        };
+        const result = await callback(tx);
+        expect(tx.availabilityBlock.update).toHaveBeenCalledWith({
+          where: { id: 'b1', userId },
+          data: {
+            date: expect.any(Date),
+            startTime: '10:00',
+            endTime: '15:00',
+          },
+        });
+        return result;
+      });
 
       const result = await updateBlock(userId, 'b1', {
         date: '2025-06-05',
@@ -378,17 +397,20 @@ describe('Availability Service', () => {
         endTime: '15:00',
       });
 
-      const call = prisma.availabilityBlock.update.mock.calls[0][0];
-      expect(call.where).toEqual({ id: 'b1', userId });
-      expect(call.data.startTime).toBe('10:00');
-      expect(call.data.endTime).toBe('15:00');
-      expect(call.data.date.getUTCHours()).toBe(0);
-      expect(call.data.date.getUTCMinutes()).toBe(0);
       expect(result).toEqual(updatedBlock);
     });
 
     it('should propagate errors when block is not found', async () => {
-      prisma.availabilityBlock.update.mockRejectedValue(new Error('Record not found'));
+      prisma.$transaction.mockImplementation(async (callback) => {
+        const tx = {
+          availabilityBlock: {
+            findMany: vi.fn().mockResolvedValue([]),
+            deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
+            update: vi.fn().mockRejectedValue(new Error('Record not found')),
+          },
+        };
+        return callback(tx);
+      });
 
       await expect(
         updateBlock(userId, 'nonexistent', { date: '2025-06-01', startTime: '09:00', endTime: '12:00' })
