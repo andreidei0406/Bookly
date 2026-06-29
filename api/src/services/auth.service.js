@@ -173,7 +173,7 @@ export async function refreshTokens({ refreshToken }) {
     where: {
       tokenHash,
       userId: payload.sub,
-      revoked: false,
+      isRevoked: false,
     },
   });
 
@@ -185,7 +185,7 @@ export async function refreshTokens({ refreshToken }) {
     // Revoke expired token
     await prisma.refreshToken.update({
       where: { id: storedToken.id },
-      data: { revoked: true },
+      data: { isRevoked: true },
     });
     throw ApiError.unauthorized('Refresh token has expired');
   }
@@ -193,7 +193,7 @@ export async function refreshTokens({ refreshToken }) {
   // Revoke old token
   await prisma.refreshToken.update({
     where: { id: storedToken.id },
-    data: { revoked: true },
+    data: { isRevoked: true },
   });
 
   const user = await prisma.user.findUnique({
@@ -249,10 +249,10 @@ export async function logout({ refreshToken }) {
     },
   });
 
-  if (storedToken && !storedToken.revoked) {
+  if (storedToken && !storedToken.isRevoked) {
     await prisma.refreshToken.update({
       where: { id: storedToken.id },
-      data: { revoked: true },
+      data: { isRevoked: true },
     });
   }
 
@@ -323,8 +323,8 @@ export async function resetPassword({ token, password }) {
 
   // Revoke all existing refresh tokens for security
   await prisma.refreshToken.updateMany({
-    where: { userId: user.id, revoked: false },
-    data: { revoked: true },
+    where: { userId: user.id, isRevoked: false },
+    data: { isRevoked: true },
   });
 
   logger.info(`Password reset completed for user: ${user.email}`);
